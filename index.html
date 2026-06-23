@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MiniWorld Database - Item ID</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-main: #141118;
+    --bg-secondary: #1d1826;
+    --bg-hover: #2a2336;
+    --accent-1: #b472ff;
+    --accent-2: #ff72e3;
+    --text-main: #ffffff;
+    --text-muted: #a09ba8;
+    --border-color: #2e263c;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Poppins', sans-serif; }
+  body {
+    background-color: var(--bg-main); color: var(--text-main); min-height: 100vh;
+    display: flex; flex-direction: column;
+    background-image: radial-gradient(rgba(255, 255, 255, 0.03) 2px, transparent 2px);
+    background-size: 30px 30px;
+  }
+
+  /* --- NAVBAR & HERO --- */
+  .navbar { display: flex; justify-content: space-between; align-items: center; padding: 15px 40px; background-color: rgba(20, 17, 24, 0.95); border-bottom: 1px solid var(--border-color); position: sticky; top: 0; z-index: 1000; }
+  .navbar-logo { font-size: 1.2rem; font-weight: 700; display: flex; align-items: center; gap: 10px; letter-spacing: 1px; }
+  .navbar-logo span { color: var(--accent-1); }
+  .hero { text-align: center; padding: 50px 20px; position: relative; overflow: hidden; }
+  .hero h1 { font-size: 2.8rem; font-weight: 700; margin-bottom: 10px; }
+  .hero h1 span { background: linear-gradient(90deg, var(--accent-1), var(--accent-2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-decoration: underline; text-decoration-color: var(--accent-1); }
+  .hero p { color: var(--text-muted); font-size: 1.1rem; margin-bottom: 30px; }
+
+  /* --- SEARCH BAR --- */
+  .search-wrapper { max-width: 650px; margin: 0 auto; background-color: #ffffff; border-radius: 50px; display: flex; align-items: center; padding: 5px 20px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); transition: transform 0.2s; }
+  .search-wrapper:focus-within { transform: scale(1.02); box-shadow: 0 0 0 4px rgba(180, 114, 255, 0.3); }
+  .search-wrapper input { width: 100%; border: none; padding: 15px 10px; font-size: 1rem; outline: none; background: transparent; color: #111; }
+  .search-wrapper .search-icon { color: #666; font-size: 1.2rem; }
+
+  /* --- MAIN CONTENT LAYOUT --- */
+  .main-container { display: flex; max-width: 1400px; margin: 0 auto; width: 100%; padding: 0 40px 40px 40px; gap: 30px; flex: 1; }
+
+  /* --- SIDEBAR --- */
+  .sidebar { width: 250px; flex-shrink: 0; }
+  .sidebar-box { background-color: var(--bg-secondary); border-radius: 8px; border: 1px solid var(--border-color); overflow: hidden; position: sticky; top: 90px; }
+  .sidebar-header { background-color: rgba(255,255,255,0.03); padding: 15px; font-weight: 600; font-size: 0.9rem; border-bottom: 1px solid var(--border-color); }
+  .sidebar-menu { list-style: none; }
+  .sidebar-menu li { padding: 12px 15px; color: var(--text-muted); font-size: 0.9rem; cursor: pointer; transition: all 0.2s; border-left: 3px solid transparent; display: flex; justify-content: space-between;}
+  .sidebar-menu li:hover, .sidebar-menu li.active { background-color: var(--bg-hover); color: var(--text-main); border-left-color: var(--accent-1); }
+
+  /* --- GRID CONTENT & CARDS --- */
+  .content-area { flex: 1; }
+  .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;}
+  .section-header h2 { font-size: 1.2rem; color: var(--accent-1); text-transform: uppercase; letter-spacing: 1px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 15px; }
+
+  .item { background-color: var(--bg-secondary); border-radius: 12px; aspect-ratio: 1/1; display: flex; justify-content: center; align-items: center; position: relative; cursor: pointer; border: 1px solid var(--border-color); transition: all 0.3s ease; }
+  .item:hover { border-color: var(--accent-1); background-color: var(--bg-hover); transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0, 0, 0, 0.4); z-index: 10;}
+  .item img { max-width: 65%; max-height: 65%; object-fit: contain; transition: transform 0.3s; filter: drop-shadow(0px 5px 5px rgba(0,0,0,0.5)); }
+  .item:hover img { transform: scale(1.15); }
+
+  /* --- TOOLTIP --- */
+  .tooltip { visibility: hidden; background-color: #ffffff; color: #111; text-align: center; padding: 8px 12px; position: absolute; z-index: 100; bottom: 110%; left: 50%; transform: translateX(-50%) translateY(10px); white-space: nowrap; border-radius: 6px; box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3); opacity: 0; transition: all 0.2s ease; pointer-events: none; font-size: 0.85rem; font-weight: 600; }
+  .tooltip::after { content: ''; position: absolute; top: 100%; left: 50%; margin-left: -6px; border-width: 6px; border-style: solid; border-color: #ffffff transparent transparent transparent; }
+  .item:hover .tooltip { visibility: visible; opacity: 1; transform: translateX(-50%) translateY(0); }
+  .tooltip span { display: block; color: #666; font-size: 0.75rem; font-weight: 400; margin-top: 2px; }
+  .item-source { display: block; font-size: 0.65rem; color: var(--accent-1); font-weight: bold; margin-top: 3px; text-transform: uppercase;}
+
+  /* --- LOADING & TOAST --- */
+  #loading { text-align: center; color: var(--text-muted); padding: 40px; }
+  .loading-log { font-size: 0.8rem; color: #666; margin-top: 10px; font-family: monospace; white-space: pre-line; text-align: left; background: #111; padding: 10px; border-radius: 5px; display: inline-block; text-align: left;}
+  #toast { visibility: hidden; min-width: 250px; background: linear-gradient(90deg, var(--accent-1), var(--accent-2)); color: #fff; text-align: center; border-radius: 50px; padding: 12px 20px; position: fixed; z-index: 1000; left: 50%; bottom: 30px; transform: translateX(-50%); font-weight: 600; box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3); opacity: 0; transition: opacity 0.3s, bottom 0.3s; }
+  #toast.show { visibility: visible; opacity: 1; bottom: 40px; }
+
+  @media (max-width: 768px) { .main-container { flex-direction: column; padding: 20px; } .sidebar { width: 100%; } .sidebar-box {position: relative; top: 0;} .hero h1 { font-size: 1.8rem; } .search-wrapper { width: 90%; } }
+</style>
+</head>
+<body>
+
+<div class="navbar">
+  <div class="navbar-logo"><span>MINI</span>WORLD DB</div>
+  <div style="color: var(--text-muted); font-size: 0.9rem;">Created by Deepcrips</div>
+</div>
+
+<div class="hero">
+  <h1>Browse <span id="totalItemsCount">0</span> Items</h1>
+  <p>The Ultimate reference tool for MiniWorld creators and players.</p>
+  <div class="search-wrapper">
+    <span class="search-icon">🔍</span>
+    <input type="text" id="searchInput" placeholder="Search items, #IDs, or names...">
+  </div>
+</div>
+
+<div class="main-container">
+  
+  <div class="sidebar">
+    <div class="sidebar-box">
+      <div class="sidebar-header">Item Categories</div>
+      <ul class="sidebar-menu" id="categoryMenu">
+        <li class="active" data-filter="All">Semua Item</li>
+        <li data-filter="Blocks">Blocks</li>
+        <li data-filter="Creature">Creature</li>
+        <li data-filter="Gameplay">Gameplay</li>
+        <li data-filter="Items">Items</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="content-area">
+    <div class="section-header">
+      <h2 id="sectionTitle">SEMUA ITEM</h2>
+    </div>
+    <div id="loading">
+      Memuat data item...
+      <div id="loadingLog" class="loading-log"></div>
+    </div>
+    <div class="grid" id="itemGrid"></div>
+  </div>
+</div>
+
+<div id="toast">✅ ID Disalin ke Clipboard!</div>
+
+<script>
+  // ==========================================
+  // PENGATURAN DATABASE (UPDATE: SEMUA FOLDER SUDAH DIISI)
+  // ==========================================
+  const databaseConfig = [
+    {
+      category: "Blocks",
+      txtFolder: "data/blocks",
+      iconFolder: "data icon/block/icons_cache", // Icon folder: block (tanpa 's')
+      files: [
+        "colour.txt",
+        "construction.txt",
+        "decoration.txt",
+        "function.txt",
+        "natural.txt",
+        "terrian.txt"
+      ]
+    },
+    {
+      category: "Creature",
+      txtFolder: "data/creature",
+      iconFolder: "data icon/creature/icons_cache",
+      files: [
+        "animals.txt",
+        "figure.txt",
+        "monsters.txt"
+      ]
+    },
+    {
+      category: "Gameplay",
+      txtFolder: "data/gameplay",
+      iconFolder: "data icon/gameplay/icons_cache",
+      files: [
+        "circuit.txt",
+        "creation.txt",
+        "function.txt",
+        "machinery.txt"
+      ]
+    },
+    {
+      category: "Items",
+      txtFolder: "data/items",
+      iconFolder: "data icon/items/icons_cache",
+      files: [
+        "equipment.txt",
+        "food.txt",
+        "function.txt",
+        "material.txt",
+        "tool.txt",
+        "weapon.txt"
+      ]
+    }
+  ];
+  // ==========================================
+
+  const grid = document.getElementById('itemGrid');
+  const toast = document.getElementById('toast');
+  const loading = document.getElementById('loading');
+  const loadingLog = document.getElementById('loadingLog');
+  const searchInput = document.getElementById('searchInput');
+  const totalItemsCount = document.getElementById('totalItemsCount');
+  const categoryMenu = document.getElementById('categoryMenu');
+  const sectionTitle = document.getElementById('sectionTitle');
+  
+  let allItemsData = [];
+  let currentFilter = 'All';
+
+  function logMessage(msg) {
+    loadingLog.innerHTML += msg + "<br>";
+  }
+
+  // Fungsi memuat semua data secara otomatis
+  async function loadAllData() {
+    logMessage("Mulai memindai database...");
+    
+    for (const group of databaseConfig) {
+      if (group.files.length === 0) continue;
+      
+      for (const fileName of group.files) {
+        const txtPath = `${group.txtFolder}/${fileName}`;
+        logMessage(`-> Mencoba memuat: ${txtPath}`);
+        
+        try {
+          const response = await fetch(txtPath);
+          if (!response.ok) {
+            logMessage(`❌ Gagal: File tidak ditemukan (${txtPath})`);
+            continue;
+          }
+          
+          const dataTeks = await response.text();
+          const barisTeks = dataTeks.trim().split('\n');
+          let hitungItem = 0;
+          
+          barisTeks.forEach(baris => {
+            const teksBersih = baris.trim();
+            if (teksBersih !== "") {
+              const matchID = teksBersih.match(/^(\d+)/);
+              if (matchID) {
+                const idItem = matchID[1];
+                const namaItem = teksBersih.substring(idItem.length).trim();
+                const namaSumber = fileName.replace('.txt', '');
+                
+                allItemsData.push({
+                  id: idItem,
+                  name: namaItem,
+                  category: group.category,
+                  sourceTag: `${group.category} / ${namaSumber}`, // Tag sekarang menyertakan nama kategori supaya jelas
+                  imagePath: `${group.iconFolder}/${idItem}.webp`
+                });
+                hitungItem++;
+              }
+            }
+          });
+          logMessage(`✅ Sukses: Memuat ${hitungItem} item dari ${fileName}`);
+        } catch (error) {
+          logMessage(`❌ Error Fetch: ${error.message}`);
+        }
+      }
+    }
+    
+    // Sembunyikan loading jika sudah selesai
+    setTimeout(() => {
+      loading.style.display = 'none';
+      totalItemsCount.innerText = allItemsData.length.toLocaleString();
+      renderGrid(allItemsData);
+    }, 500);
+  }
+
+  // Merender ke layar
+  function renderGrid(dataToRender) {
+    grid.innerHTML = '';
+    
+    dataToRender.forEach(item => {
+      const itemDiv = document.createElement('div');
+      itemDiv.className = 'item';
+      itemDiv.setAttribute('data-id', item.id);
+      itemDiv.setAttribute('data-name', item.name.toLowerCase());
+      itemDiv.setAttribute('data-category', item.category);
+      
+      itemDiv.innerHTML = `
+        <img src="${item.imagePath}" alt="${item.name}" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'40\\' height=\\'40\\'><rect width=\\'40\\' height=\\'40\\' fill=\\'#333\\' rx=\\'5\\'/></svg>'">
+        <div class="tooltip">
+          ${item.name}
+          <span>ID: ${item.id}</span>
+          <span class="item-source">📂 ${item.sourceTag}</span>
+        </div>
+      `;
+
+      itemDiv.addEventListener('click', () => {
+        navigator.clipboard.writeText(item.id).then(() => {
+          showToast(`ID ${item.id} berhasil disalin!`);
+        }).catch(err => console.error('Gagal copy: ', err));
+      });
+
+      grid.appendChild(itemDiv);
+    });
+  }
+
+  // Filter Sidebar
+  categoryMenu.addEventListener('click', function(e) {
+    // Pastikan yang di-klik adalah elemen LI (bukan padding kosong)
+    if (e.target.tagName === 'LI') {
+      document.querySelectorAll('#categoryMenu li').forEach(li => li.classList.remove('active'));
+      e.target.classList.add('active');
+      
+      currentFilter = e.target.getAttribute('data-filter');
+      sectionTitle.innerText = e.target.innerText.toUpperCase();
+      
+      filterItems();
+    }
+  });
+
+  // Fungsi Search & Kategori gabungan
+  searchInput.addEventListener('input', filterItems);
+
+  function filterItems() {
+    const searchTerm = searchInput.value.toLowerCase();
+    
+    const filteredData = allItemsData.filter(item => {
+      const matchSearch = item.name.toLowerCase().includes(searchTerm) || item.id.includes(searchTerm);
+      const matchCategory = (currentFilter === 'All' || item.category === currentFilter);
+      return matchSearch && matchCategory;
+    });
+    
+    renderGrid(filteredData);
+  }
+
+  function showToast(pesan) {
+    toast.textContent = pesan;
+    toast.classList.add("show");
+    setTimeout(() => { toast.classList.remove("show"); }, 2500);
+  }
+
+  // Jalankan fungsi
+  loadAllData();
+</script>
+</body>
+</html>
