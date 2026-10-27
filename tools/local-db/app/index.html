@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Database ID block, item, dan creature Mini World — cari nama, salin ID.">
+<title>MiniWorld DB — Katalog ID Block &amp; Item</title>
+<style>
+  :root {
+    --bg:        #0d0f12;
+    --panel:     #131619;
+    --panel-2:   #181c21;
+    --panel-3:   #1e232a;
+    --line:      #242a31;
+    --line-2:    #2f363e;
+    --text:      #e7eaee;
+    --muted:     #98a1ac;
+    --dim:       #6a737e;
+    --accent:    #e8a33d;
+    --accent-ink:#1a1206;
+    --ok:        #74c69d;
+    --cat-blocks:   #d9a441;
+    --cat-gameplay: #58a6d8;
+    --cat-creature: #77c178;
+    --cat-items:    #b48ae0;
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 14px;
+    line-height: 1.45;
+    -webkit-font-smoothing: antialiased;
+  }
+  button, input, select { font: inherit; color: inherit; }
+  a { color: var(--muted); text-decoration: none; }
+  a:hover { color: var(--accent); }
+  ::selection { background: rgba(232,163,61,.3); }
+
+  /* ---------- topbar ---------- */
+  .topbar {
+    position: sticky; top: 0; z-index: 50;
+    display: flex; align-items: center; gap: 18px;
+    padding: 10px 20px;
+    background: rgba(13,15,18,.96);
+    border-bottom: 1px solid var(--line);
+  }
+  .brand { display: flex; align-items: baseline; gap: 8px; flex-shrink: 0; }
+  .brand b {
+    font-size: 15px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase;
+  }
+  .brand span {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .08em;
+    color: var(--accent); border: 1px solid var(--line-2);
+    padding: 1px 5px; border-radius: 3px;
+  }
+
+  .search {
+    position: relative; flex: 1; max-width: 640px;
+  }
+  .search svg {
+    position: absolute; left: 11px; top: 50%; transform: translateY(-50%);
+    width: 15px; height: 15px; color: var(--dim); pointer-events: none;
+  }
+  .search input {
+    width: 100%; height: 36px;
+    padding: 0 62px 0 34px;
+    background: var(--panel-2);
+    border: 1px solid var(--line-2);
+    border-radius: 5px;
+    outline: none;
+    transition: border-color .12s, background .12s;
+  }
+  .search input::placeholder { color: var(--dim); }
+  .search input:focus { border-color: var(--accent); background: var(--panel-3); }
+  .search kbd {
+    position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+    font-family: var(--mono); font-size: 10px; color: var(--dim);
+    border: 1px solid var(--line-2); border-bottom-width: 2px;
+    border-radius: 3px; padding: 1px 5px; background: var(--panel);
+    pointer-events: none;
+  }
+  .search input:focus ~ kbd { display: none; }
+
+  .topbar-right { display: flex; align-items: center; gap: 10px; margin-left: auto; }
+  .stat {
+    font-family: var(--mono); font-size: 11.5px; color: var(--muted);
+    white-space: nowrap;
+  }
+  .stat b { color: var(--text); font-weight: 600; }
+  select {
+    height: 30px; background: var(--panel-2); border: 1px solid var(--line-2);
+    border-radius: 4px; padding: 0 6px; font-size: 12.5px; cursor: pointer;
+  }
+  select:focus { outline: none; border-color: var(--accent); }
+  .icon-btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 30px; height: 30px; background: var(--panel-2);
+    border: 1px solid var(--line-2); border-radius: 4px; cursor: pointer;
+    color: var(--muted);
+  }
+  .icon-btn:hover { color: var(--accent); border-color: var(--line-2); background: var(--panel-3); }
+  .icon-btn svg { width: 15px; height: 15px; }
+
+  /* ---------- layout ---------- */
+  .layout {
+    display: grid;
+    grid-template-columns: 216px minmax(0, 1fr);
+    gap: 22px;
+    max-width: 1560px;
+    margin: 0 auto;
+    padding: 20px;
+    align-items: start;
+  }
+
+  /* ---------- sidebar ---------- */
+  .side { position: sticky; top: 68px; }
+  .side h3 {
+    margin: 0 0 8px; font-size: 10.5px; font-weight: 700;
+    letter-spacing: .14em; text-transform: uppercase; color: var(--dim);
+  }
+  .cats { list-style: none; margin: 0 0 20px; padding: 0; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+  .cats li {
+    display: flex; align-items: center; gap: 9px;
+    padding: 8px 11px; cursor: pointer;
+    border-bottom: 1px solid var(--line);
+    background: var(--panel);
+    color: var(--muted);
+    transition: background .1s, color .1s;
+  }
+  .cats li:last-child { border-bottom: none; }
+  .cats li:hover { background: var(--panel-2); color: var(--text); }
+  .cats li.on { background: var(--panel-3); color: var(--text); box-shadow: inset 2px 0 0 var(--accent); }
+  .dot { width: 7px; height: 7px; border-radius: 2px; flex-shrink: 0; background: var(--muted); }
+  .cats li[data-cat="blocks"]   .dot { background: var(--cat-blocks); }
+  .cats li[data-cat="gameplay"] .dot { background: var(--cat-gameplay); }
+  .cats li[data-cat="creature"] .dot { background: var(--cat-creature); }
+  .cats li[data-cat="items"]    .dot { background: var(--cat-items); }
+  .cats .n { margin-left: auto; font-family: var(--mono); font-size: 11px; color: var(--dim); }
+  .cats li.on .n { color: var(--muted); }
+
+  .opt { display: flex; align-items: center; gap: 8px; padding: 6px 2px; color: var(--muted); cursor: pointer; font-size: 13px; }
+  .opt input {
+    appearance: none; -webkit-appearance: none; margin: 0;
+    width: 14px; height: 14px; flex-shrink: 0;
+    border: 1px solid var(--line-2); border-radius: 3px;
+    background: var(--panel-3); cursor: pointer; position: relative;
+    transition: background .1s, border-color .1s;
+  }
+  .opt input:hover { border-color: var(--dim); }
+  .opt input:checked { background: var(--accent); border-color: var(--accent); }
+  .opt input:checked::after {
+    content: ""; position: absolute; left: 4px; top: 1px;
+    width: 4px; height: 8px;
+    border: solid var(--accent-ink); border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+  }
+  .opt input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .opt:hover { color: var(--text); }
+
+  .note {
+    margin-top: 18px; padding: 11px;
+    background: var(--panel); border: 1px solid var(--line); border-radius: 6px;
+    font-size: 12px; color: var(--dim); line-height: 1.55;
+  }
+  .note p { margin: 0 0 9px; }
+  .note p:last-child { margin-bottom: 0; }
+  .note b { color: var(--muted); font-weight: 600; }
+
+  /* ---------- toolbar ---------- */
+  .toolbar {
+    display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+    padding-bottom: 12px; margin-bottom: 16px;
+    border-bottom: 1px solid var(--line);
+  }
+  .toolbar h1 {
+    margin: 0; font-size: 15px; font-weight: 700; letter-spacing: .04em;
+    text-transform: uppercase; flex-shrink: 0;
+  }
+  .toolbar .count { font-family: var(--mono); font-size: 12px; color: var(--dim); flex-shrink: 0; }
+  .seg { display: flex; flex-shrink: 0; margin-left: auto; border: 1px solid var(--line-2); border-radius: 5px; overflow: hidden; }
+  .seg button {
+    background: var(--panel-2); border: none; padding: 5px 11px;
+    font-size: 12px; color: var(--muted); cursor: pointer;
+    border-right: 1px solid var(--line-2);
+  }
+  .seg button:last-child { border-right: none; }
+  .seg button:hover { color: var(--text); background: var(--panel-3); }
+  .seg button.on { background: var(--panel-3); color: var(--accent); }
+
+  /* ---------- grid ---------- */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(268px, 1fr));
+    gap: 8px;
+  }
+  .grid.list { grid-template-columns: 1fr; gap: 4px; }
+
+  .card {
+    display: flex; align-items: center; gap: 11px;
+    padding: 9px 11px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    cursor: pointer;
+    text-align: left;
+    position: relative;
+    transition: border-color .1s, background .1s;
+    min-width: 0;
+  }
+  .card:hover { background: var(--panel-2); border-color: var(--line-2); }
+  .card:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .card.copied { border-color: var(--ok); }
+
+  .thumb {
+    width: 46px; height: 46px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--panel-3);
+    border: 1px solid var(--line);
+    border-radius: 5px;
+    overflow: hidden;
+  }
+  .thumb img { width: 100%; height: 100%; object-fit: contain; image-rendering: auto; }
+  .thumb .ph {
+    font-family: var(--mono); font-size: 15px; font-weight: 600;
+    color: var(--dim); letter-spacing: .02em;
+  }
+
+  .meta { min-width: 0; flex: 1; display: block; }
+  .nm {
+    display: block;
+    font-size: 13.5px; font-weight: 600; color: var(--text);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .nm.empty { color: var(--dim); font-weight: 500; font-style: italic; }
+  .nm2 {
+    display: block; margin-top: 3px;
+    font-size: 12px; color: var(--muted);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .sub {
+    display: inline-block; margin-top: 7px;
+    font-size: 10.5px; letter-spacing: .06em; text-transform: uppercase;
+    color: var(--dim); border: 1px solid var(--line-2);
+    border-radius: 3px; padding: 0 4px; line-height: 1.5;
+  }
+  .sub.none { color: var(--muted); border-style: dashed; }
+
+  .id {
+    font-family: var(--mono); font-size: 12.5px; font-weight: 600;
+    color: var(--accent); background: rgba(232,163,61,.09);
+    border: 1px solid rgba(232,163,61,.22);
+    border-radius: 4px; padding: 2px 6px;
+    flex-shrink: 0;
+    transition: background .1s;
+  }
+  .card:hover .id { background: rgba(232,163,61,.16); }
+
+  .grid.list .thumb { width: 34px; height: 34px; }
+  .grid.list .card { padding: 7px 11px; }
+  .grid.list .sub { display: none; }
+  .grid.list .nm { font-size: 13px; }
+
+  /* ---------- states ---------- */
+  .state {
+    padding: 44px 20px; text-align: center; color: var(--muted);
+    border: 1px dashed var(--line-2); border-radius: 8px; background: var(--panel);
+  }
+  .state h4 { margin: 0 0 6px; font-size: 14px; color: var(--text); font-weight: 600; }
+  .state p { margin: 0; font-size: 13px; }
+  .state .btn {
+    margin-top: 14px; display: inline-block;
+    background: var(--panel-3); border: 1px solid var(--line-2);
+    color: var(--text); border-radius: 5px; padding: 6px 14px;
+    font-size: 13px; cursor: pointer;
+  }
+  .state .btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  .skel { display: grid; grid-template-columns: repeat(auto-fill, minmax(268px, 1fr)); gap: 8px; }
+  .skel div {
+    height: 66px; border-radius: 6px; background: var(--panel);
+    border: 1px solid var(--line); animation: pulse 1.1s ease-in-out infinite;
+  }
+  .skel div:nth-child(2) { animation-delay: .12s; }
+  .skel div:nth-child(3) { animation-delay: .24s; }
+  .skel div:nth-child(4) { animation-delay: .36s; }
+  @keyframes pulse { 0%,100% { opacity: .45; } 50% { opacity: .9; } }
+
+  .more {
+    display: block; width: 100%; margin-top: 14px; padding: 11px;
+    background: var(--panel); border: 1px solid var(--line);
+    border-radius: 6px; color: var(--muted); font-size: 13px; cursor: pointer;
+  }
+  .more:hover { border-color: var(--line-2); color: var(--text); }
+
+  /* ---------- footer / toast ---------- */
+  footer {
+    max-width: 1560px; margin: 0 auto; padding: 26px 20px 40px;
+    border-top: 1px solid var(--line);
+    font-size: 12px; color: var(--dim); line-height: 1.7;
+  }
+  footer a { color: var(--muted); text-decoration: underline; text-underline-offset: 2px; }
+  footer p { margin: 0 0 7px; }
+  footer p:last-child { margin-bottom: 0; }
+  footer .upd { color: var(--muted); letter-spacing: .01em; }
+
+  #toast {
+    position: fixed; left: 50%; bottom: 26px; transform: translate(-50%, 14px);
+    display: flex; align-items: center; gap: 9px;
+    background: var(--panel-3); border: 1px solid var(--line-2);
+    border-left: 3px solid var(--ok);
+    border-radius: 5px; padding: 9px 15px;
+    font-size: 13px; color: var(--text);
+    opacity: 0; pointer-events: none;
+    transition: opacity .16s, transform .16s;
+    z-index: 90;
+  }
+  #toast.on { opacity: 1; transform: translate(-50%, 0); }
+  #toast code { font-family: var(--mono); color: var(--ok); }
+
+  /* ---------- responsive ---------- */
+  @media (max-width: 860px) {
+    .topbar { flex-wrap: wrap; gap: 10px; padding: 10px 14px; }
+    .search { order: 3; flex-basis: 100%; max-width: none; }
+    .topbar-right { flex-wrap: wrap; gap: 8px; }
+    .layout { grid-template-columns: minmax(0, 1fr); gap: 14px; padding: 14px; }
+    .side { position: static; }
+    .cats { display: flex; overflow-x: auto; border-radius: 6px; }
+    .cats li { border-bottom: none; border-right: 1px solid var(--line); white-space: nowrap; }
+    .cats li.on { box-shadow: inset 0 -2px 0 var(--accent); }
+    .note { display: none; }
+    .grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+    .card { flex-wrap: wrap; }
+    .grid .nm2 { font-size: 11px; }
+    .seg { margin-left: 0; }
+    .toolbar { gap: 10px; }
+  }
+  @media (max-width: 620px) {
+    #topStat { display: none; }
+    .toolbar { padding-bottom: 10px; }
+    .toolbar h1 { font-size: 14px; }
+    .grid, .skel { grid-template-columns: 1fr; }
+    .card { flex-wrap: nowrap; padding: 10px; gap: 10px; }
+    .grid .nm2 { font-size: 12px; }
+    .side { padding-bottom: 0; }
+    .opt { display: inline-flex; padding: 4px 10px 4px 2px; }
+    footer { padding: 22px 16px 34px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+  }
+
+  /* ---------- lokal: pilih-banyak, duplikat, hapus ---------- */
+  .brand .local {
+    color: var(--ok); border-color: rgba(116,198,157,.4);
+    background: rgba(116,198,157,.08); letter-spacing: .1em;
+  }
+  .selrow {
+    position: sticky; top: 57px; z-index: 45;
+    display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+    padding: 9px 0 11px; margin: -2px 0 14px;
+    background: var(--bg); border-bottom: 1px solid var(--line);
+  }
+  .selrow .opt { padding: 0; }
+  .selrow .stat-line { font-family: var(--mono); font-size: 11.5px; color: var(--muted); }
+  .selrow .stat-line b { color: var(--text); }
+  .selrow .stat-line .d { color: #ff9a80; }
+  .selrow .stat-line .u { color: var(--ok); }
+  .btn-danger {
+    background: rgba(214,84,60,.14); border: 1px solid rgba(214,84,60,.5);
+    color: #f08a72; border-radius: 5px; padding: 5px 15px;
+    font-size: 12.5px; font-weight: 700; letter-spacing: .08em; cursor: pointer;
+    transition: background .1s, color .1s;
+  }
+  .btn-danger:hover:not(:disabled) { background: rgba(214,84,60,.3); color: #ffb9a6; }
+  .btn-danger:disabled { opacity: .38; cursor: not-allowed; }
+  .btn-ghost {
+    background: var(--panel-2); border: 1px solid var(--line-2);
+    color: var(--muted); border-radius: 5px; padding: 5px 12px;
+    font-size: 12.5px; cursor: pointer;
+  }
+  .btn-ghost:hover:not(:disabled) { color: var(--text); background: var(--panel-3); }
+  .btn-ghost:disabled { opacity: .38; cursor: not-allowed; }
+
+  .card { padding-left: 9px; }
+  .card .pick {
+    appearance: none; -webkit-appearance: none; margin: 0;
+    width: 15px; height: 15px; flex-shrink: 0;
+    border: 1px solid var(--line-2); border-radius: 3px;
+    background: var(--panel-3); cursor: pointer; position: relative;
+    transition: background .1s, border-color .1s;
+  }
+  .card .pick:hover { border-color: var(--dim); }
+  .card .pick:checked { background: var(--accent); border-color: var(--accent); }
+  .card .pick:checked::after {
+    content: ""; position: absolute; left: 4.5px; top: 1px;
+    width: 4px; height: 8px; border: solid var(--accent-ink);
+    border-width: 0 2px 2px 0; transform: rotate(45deg);
+  }
+  .card .pick:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .card.sel { border-color: var(--accent); background: var(--panel-2); }
+  .card.dup { border-color: rgba(214,84,60,.5); }
+  .tag {
+    font-family: var(--mono); font-size: 9.5px; font-weight: 700;
+    letter-spacing: .1em; text-transform: uppercase;
+    border-radius: 3px; padding: 1px 4px; flex-shrink: 0;
+    border: 1px solid transparent; white-space: nowrap;
+  }
+  .tag.dup  { color: #ff9a80; background: rgba(214,84,60,.16); border-color: rgba(214,84,60,.5); }
+  .tag.uniq { color: var(--ok); background: rgba(116,198,157,.12); border-color: rgba(116,198,157,.4); }
+  .grid.list .card .pick { width: 14px; height: 14px; }
+
+  /* ---------- lokal: no urut & urut seperti di game ---------- */
+  .range { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+  .range label {
+    display: flex; align-items: center; gap: 4px;
+    font-size: 11.5px; color: var(--dim);
+  }
+  .range input {
+    width: 64px; height: 26px; padding: 0 6px;
+    background: var(--panel-2); border: 1px solid var(--line-2);
+    border-radius: 4px; font-family: var(--mono); font-size: 12px;
+    color: var(--text); outline: none; transition: border-color .1s, background .1s;
+  }
+  .range input::placeholder { color: var(--dim); font-size: 11px; }
+  .range input:focus { border-color: var(--accent); background: var(--panel-3); }
+  .range input[type=number] { -moz-appearance: textfield; appearance: textfield; }
+  .range input::-webkit-outer-spin-button,
+  .range input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  .range .btn-ghost { padding: 4px 9px; font-size: 11.5px; }
+  .rng-hint {
+    margin: 7px 0 0; font-family: var(--mono); font-size: 10.5px;
+    line-height: 1.5; color: var(--dim); letter-spacing: .02em;
+  }
+  .rng-hint b { color: var(--muted); font-weight: 600; }
+  .no {
+    font-family: var(--mono); font-size: 10.5px; font-weight: 600;
+    color: var(--muted); background: var(--panel-3);
+    border: 1px solid var(--line-2); border-radius: 4px;
+    padding: 2px 5px; flex-shrink: 0; letter-spacing: .02em;
+  }
+  .grid.list .no { font-size: 10px; padding: 1px 4px; }
+  .seg button[disabled] { opacity: .5; cursor: default; }
+
+  /* ---------- lokal: ubah no urut ---------- */
+  .mode-wrap {
+    display: inline-flex; align-items: center; gap: 13px; flex-wrap: wrap;
+    padding: 2px 0;
+  }
+  .mode-wrap .mode-hint {
+    font-family: var(--mono); font-size: 11px; color: var(--dim);
+    letter-spacing: .02em;
+  }
+  .mode-wrap .btn-ghost { padding: 4px 11px; font-size: 12px; }
+  .mode-wrap .btn-ghost.go {
+    background: rgba(217,164,65,.16); border-color: rgba(217,164,65,.55);
+    color: #ffd9a0; font-weight: 700;
+  }
+  .mode-wrap .btn-ghost.go:hover:not(:disabled) {
+    background: rgba(217,164,65,.32); color: #fff0d6;
+  }
+  .card.picked { border-color: var(--accent); background: rgba(217,164,65,.08); }
+  .pno {
+    font-family: var(--mono); font-size: 9.5px; font-weight: 700;
+    letter-spacing: .06em; white-space: nowrap;
+    border: 1px solid rgba(217,164,65,.55); border-radius: 3px;
+    padding: 1px 4px; flex-shrink: 0;
+    color: #ffd9a0; background: rgba(217,164,65,.14);
+  }
+  .card .no { cursor: pointer; }
+  .card .no:hover { border-color: var(--accent); color: var(--text); }
+  .no.editing { padding: 1px 2px 2px; border-color: var(--accent); cursor: default; }
+  .no-in {
+    width: 54px; height: 20px; padding: 0 3px;
+    background: var(--panel-2); border: 1px solid var(--accent);
+    border-radius: 3px; color: var(--text);
+    font-family: var(--mono); font-size: 11px; outline: none;
+    -moz-appearance: textfield; appearance: textfield;
+  }
+  .no-in::-webkit-outer-spin-button,
+  .no-in::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  .no-why {
+    display: block; margin-top: 5px; font-family: var(--mono);
+    font-size: 10.5px; color: var(--dim); letter-spacing: .02em;
+  }
+  #modeNo.on {
+    background: rgba(217,164,65,.16); border-color: rgba(217,164,65,.55);
+    color: #ffd9a0; font-weight: 700;
+  }
+  /* ---------- lokal: ubah nama block ---------- */
+  .card .ed {
+    flex-shrink: 0; padding: 3px 5px;
+    font-family: var(--mono); font-size: 9.5px; font-weight: 700;
+    letter-spacing: .1em; text-transform: uppercase;
+    color: var(--dim); background: transparent;
+    border: 1px solid var(--line-2); border-radius: 4px;
+    cursor: pointer; opacity: .5;
+    transition: opacity .1s, border-color .1s, color .1s;
+  }
+  .card:hover .ed { opacity: 1; }
+  .card .ed:hover { color: #ffd9a0; border-color: rgba(217,164,65,.55); }
+  .card .ed:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+  .edwrap {
+    position: fixed; inset: 0; z-index: 60;
+    background: rgba(0,0,0,.55);
+    display: flex; align-items: center; justify-content: center;
+    padding: 20px;
+  }
+  .edwrap[hidden] { display: none; }
+  .edbox {
+    width: min(430px, 100%);
+    background: var(--panel); border: 1px solid var(--line-2);
+    border-radius: 7px; padding: 15px 16px;
+    box-shadow: 0 12px 36px rgba(0,0,0,.5);
+  }
+  .edbox h4 {
+    margin: 0 0 4px; font-size: 13px; letter-spacing: .07em;
+    text-transform: uppercase; color: var(--text);
+  }
+  .edctx {
+    margin: 0 0 13px; font-family: var(--mono); font-size: 11px;
+    color: var(--dim); letter-spacing: .02em;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .edbox label {
+    display: block; margin-bottom: 10px;
+    font-size: 10.5px; letter-spacing: .07em; text-transform: uppercase;
+    color: var(--muted);
+  }
+  .edbox input[type=text] {
+    display: block; width: 100%; margin-top: 5px;
+    height: 31px; padding: 0 9px;
+    background: var(--panel-2); border: 1px solid var(--line-2);
+    border-radius: 4px; color: var(--text); font-size: 13.5px;
+    outline: none; text-transform: none; letter-spacing: 0;
+    transition: border-color .1s, background .1s;
+  }
+  .edbox input[type=text]:focus { border-color: var(--accent); background: var(--panel-3); }
+  .ederr {
+    margin: 0; font-family: var(--mono); font-size: 11px;
+    color: #ff9a80; letter-spacing: .02em; line-height: 1.5;
+  }
+  .ederr[hidden] { display: none; }
+  .edact { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
+  .edact .go {
+    background: rgba(217,164,65,.16); border: 1px solid rgba(217,164,65,.55);
+    color: #ffd9a0; font-weight: 700; border-radius: 5px; padding: 5px 16px;
+    font-size: 12.5px; cursor: pointer; transition: background .1s, color .1s;
+  }
+  .edact .go:hover:not(:disabled) { background: rgba(217,164,65,.32); color: #fff0d6; }
+  .edact .go:disabled { opacity: .4; cursor: default; }
+  .edhint {
+    margin: 11px 0 0; font-family: var(--mono); font-size: 10.5px;
+    line-height: 1.6; color: var(--dim); letter-spacing: .02em;
+  }
+
+  /* ---------- lokal: navigasi dua tingkat + urutkan sub kategori ---------- */
+  .cats li.par {
+    font-weight: 700; color: var(--text);
+    background: var(--panel-2); letter-spacing: .02em;
+  }
+  .cats li.par:hover { background: var(--panel-3); }
+  .cats li.sub { padding-left: 27px; }
+  .cats li.sub .dot { opacity: .5; width: 5px; height: 5px; }
+  .cats li.sub .urut {
+    font-family: var(--mono); font-size: 9.5px; font-weight: 700;
+    letter-spacing: .06em; white-space: nowrap; flex-shrink: 0;
+    color: #ffd9a0; background: rgba(217,164,65,.14);
+    border: 1px solid rgba(217,164,65,.55); border-radius: 3px; padding: 0 4px;
+  }
+  .cats.mode li.sub { cursor: crosshair; }
+  .cats.mode li.sub:hover { background: rgba(217,164,65,.1); color: #ffd9a0; }
+  .cats.mode li.sub.pick { background: rgba(217,164,65,.14); color: #ffd9a0; }
+  .catbar {
+    display: flex; flex-direction: column; gap: 8px;
+    margin: -14px 0 18px;
+  }
+  .catbar:empty { display: none; }
+  .catbar > .btn-ghost { width: 100%; font-size: 11.5px; padding: 5px 8px; }
+  .catbar .mode-wrap { flex-direction: column; align-items: stretch; gap: 8px; }
+  .catbar .mode-hint { line-height: 1.5; }
+
+  /* ---------- lokal: tampilan ikon saja (tanpa nama) ---------- */
+  .grid.icon {
+    grid-template-columns: repeat(auto-fill, minmax(74px, 1fr)); gap: 6px;
+  }
+  .grid.icon .card { justify-content: center; padding: 9px 6px; gap: 0; }
+  .grid.icon .meta, .grid.icon .id, .grid.icon .no, .grid.icon .tag,
+  .grid.icon .ed, .grid.icon .pno { display: none; }
+  .grid.icon .thumb { width: 54px; height: 54px; }
+  .grid.icon .pick { position: absolute; top: 4px; right: 4px; }
+
+  /* ---------- lokal: sembunyikan navigasi ---------- */
+  .layout.nav-off { grid-template-columns: minmax(0, 1fr); }
+  .layout.nav-off .side { display: none; }
+
+  @media (max-width: 620px) {
+    .grid.icon { grid-template-columns: repeat(auto-fill, minmax(62px, 1fr)); }
+    .grid.icon .thumb { width: 46px; height: 46px; }
+  }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand"><b>MiniWorld</b><span>ID DB</span><span class="local">LOCAL</span></div>
+
+  <div class="search">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+      <circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path>
+    </svg>
+    <input id="q" type="search" autocomplete="off" spellcheck="false"
+           placeholder="Cari nama block, item, atau ketik ID…"
+           data-i18n-ph="search.ph" aria-label="Cari entri" data-i18n-aria="search.aria">
+    <kbd>/</kbd>
+  </div>
+
+  <div class="topbar-right">
+    <span class="stat" id="topStat">memuat…</span>
+    <select id="lang" aria-label="Bahasa nama" data-i18n-aria="lang.aria">
+      <option value="en">English</option>
+      <option value="id">Bahasa Indonesia</option>
+      <option value="zh">中文</option>
+      <option value="es">Español</option>
+      <option value="pt">Português</option>
+      <option value="fr">Français</option>
+      <option value="ja">日本語</option>
+      <option value="ru">Русский</option>
+    </select>
+    <a class="icon-btn" href="https://github.com/FooTex16/Miniworld-DB" title="Repo GitHub" aria-label="GitHub">
+      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+        <path d="M12 .5A11.5 11.5 0 0 0 .5 12a11.5 11.5 0 0 0 7.86 10.92c.58.11.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.53-1.34-1.29-1.7-1.29-1.7-1.05-.72.08-.7.08-.7 1.16.08 1.77 1.2 1.77 1.2 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.7 0-1.26.45-2.29 1.19-3.1-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.18 1.18a11 11 0 0 1 5.8 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.12 3.05.74.81 1.18 1.84 1.18 3.1 0 4.43-2.69 5.4-5.25 5.69.41.36.78 1.06.78 2.14v3.17c0 .31.21.68.8.56A11.5 11.5 0 0 0 23.5 12 11.5 11.5 0 0 0 12 .5z"/>
+      </svg>
+    </a>
+  </div>
+</header>
+
+<div class="layout">
+  <aside class="side">
+    <h3 data-i18n="side.cat">Kategori</h3>
+    <ul class="cats" id="cats">
+      <li data-cat="all" class="on"><span class="dot" style="background:var(--muted)"></span>Semua<span class="n" data-n="all">—</span></li>
+    </ul>
+    <div class="catbar" id="catBar">
+      <button class="btn-ghost" type="button" id="catSortOn" hidden
+              data-i18n="cat.sortBtn">Urutkan sub kategori</button>
+      <span class="mode-wrap" id="catMode" hidden>
+        <span class="mode-hint" data-i18n="cat.hint">klik sub kategori berurutan — yang pertama jadi No.1, kedua No.2, …</span>
+        <button class="btn-ghost go" type="button" id="catApply" disabled
+                data-i18n="cat.apply">Terapkan urutan</button>
+        <button class="btn-ghost" type="button" id="catReset" hidden
+                data-i18n="cat.reset">Urutan asli</button>
+        <button class="btn-ghost" type="button" id="catExit"
+                data-i18n="common.done">Selesai</button>
+      </span>
+    </div>
+
+    <h3 data-i18n="side.filter">Filter</h3>
+    <label class="opt"><input type="checkbox" id="onlyIcon"> <span data-i18n="filter.icon">Hanya yang ada ikonnya</span></label>
+    <label class="opt"><input type="checkbox" id="onlyName"> <span data-i18n="filter.name">Hanya yang punya nama</span></label>
+    <label class="opt"><input type="checkbox" id="onlyDup"> <span data-i18n="filter.dup">Hanya yang duplikat</span></label>
+    <label class="opt"><input type="checkbox" id="onlyUniq"> <span data-i18n="filter.uniq">Hanya yang unik</span></label>
+
+    <h3 data-i18n="side.no">No urut</h3>
+    <div class="range">
+      <label><span data-i18n="range.from">dari</span> <input type="number" id="noFrom" min="1" value="1" inputmode="numeric" aria-label="No urut dari" data-i18n-aria="range.ariaFrom"></label>
+      <label><span data-i18n="range.to">s/d</span> <input type="number" id="noTo" min="1" placeholder="habis" inputmode="numeric" aria-label="No urut sampai" data-i18n-aria="range.ariaTo"></label>
+      <button class="btn-ghost" type="button" id="noReset" data-i18n="common.all">Semua</button>
+    </div>
+    <p class="rng-hint" id="noHint">No. 1 – habis · urut seperti di game</p>
+
+    <div class="note">
+      <p data-i18n-html="note.1"><b>Cara pakai:</b> klik satu entri untuk menyalin ID-nya. Centang banyak entri sekaligus untuk melihat berapa yang <b>duplikat</b> dan berapa yang <b>unik</b>, lalu tekan <b style="color:#f08a72">HAPUS</b> untuk membuangnya. Tekan <b>/</b> untuk fokus ke pencarian, <b>Del</b> untuk hapus pilihan.</p>
+      <p data-i18n-html="note.2"><b>No urut</b> = posisi block di dalam kategori, mengikuti urutan aslinya di game. Isi <i>dari</i> / <i>s/d</i> untuk mengambil rentang (mis. 1–40), kosongkan <i>s/d</i> untuk sampai habis. Tombol <b>Game</b> mengatur tampilan persis seperti urutan di game.</p>
+      <p data-i18n-html="note.3"><b>Ubah no urut:</b> klik chip <b>No.N</b> pada kartu untuk mengganti nomor satu block saja (angka milik block lain akan bertukar dengannya). Atau tekan <b>Ubah no urut</b>, lalu klik kartu berurutan — yang pertama jadi No.1, kedua No.2, dst. — dan tekan <b>Terapkan no urut</b>. <b>Urutan asli</b> mengembalikan seperti hasil scan.</p>
+      <p data-i18n-html="note.4"><b>Ubah nama:</b> tekan tombol <b>UBAH</b> di kartu (muncul saat kursor di atas kartu), isi nama <b>English</b> dan/atau <b>中文</b>, lalu <b>Simpan</b> (<kbd>Enter</kbd> simpan, <kbd>Esc</kbd> batal). Hasilnya ditulis ke <code>data_id\entries.json</code> kategori tsb dan ikut disinkronkan ke data situs untuk translate berikutnya; id, label grup, dan OCR tetap tidak bisa diedit.</p>
+      <p data-i18n-html="note.5"><b>Sumber data:</b> <code>DATA\&lt;indu&gt;\&lt;kategori&gt;</code> — kategori mengikuti nama folder. Sub kategori hanya muncul di navigasi setelah induknya dipilih, dan urutannya bisa disusun lewat tombol <b>Urutkan sub kategori</b>.</p>
+    </div>
+  </aside>
+
+  <main>
+    <div class="toolbar">
+      <h1 id="title">Semua</h1>
+      <span class="count" id="count">—</span>
+      <span class="count" id="dupStat"></span>
+      <div class="seg" role="group" aria-label="Urutan" data-i18n-aria="seg.sort">
+        <button data-sort="id" class="on">ID</button>
+        <button data-sort="name" data-i18n="sort.name">Nama</button>
+        <button data-sort="game" data-i18n="sort.game" title="Urutkan persis seperti urutan block di game" data-i18n-title="sort.gameTip">Game</button>
+      </div>
+      <div class="seg" role="group" aria-label="Tampilan" data-i18n-aria="seg.view">
+        <button data-view="grid" class="on" data-i18n="view.grid">Kartu</button>
+        <button data-view="icon" data-i18n="view.icon">Ikon</button>
+        <button data-view="list" data-i18n="view.list">Daftar</button>
+      </div>
+      <button class="btn-ghost" type="button" id="navToggle"
+              data-i18n="nav.hide">Sembunyikan navigasi</button>
+    </div>
+
+    <div class="selrow">
+      <label class="opt"><input type="checkbox" id="selAll"> <span data-i18n="sel.all">Pilih semua hasil</span></label>
+      <span class="stat-line" id="selStat"><b>0</b> dipilih</span>
+      <button class="btn-ghost" id="selClear" disabled data-i18n="sel.clear">Bersihkan</button>
+      <button class="btn-danger" id="selDelete" disabled data-i18n="sel.del">HAPUS</button>
+      <button class="btn-ghost" id="modeNo" data-i18n="no.modeBtn"
+              title="Susun ulang no urut: klik kartu berurutan, lalu terapkan" data-i18n-title="no.modeTip">Ubah no urut</button>
+      <button class="btn-ghost" id="noOrderReset" hidden data-i18n="common.all"
+              title="Kembalikan no urut kategori ini seperti hasil scan" data-i18n-title="no.resetTip">Urutan asli</button>
+      <span class="mode-wrap" id="modeWrap" hidden>
+        <span class="mode-hint" data-i18n="no.modeHint">klik kartu berurutan — yang pertama jadi No.1, kedua No.2, …</span>
+        <span class="stat-line" id="pickStat"><b>0</b> dipilih</span>
+        <button class="btn-ghost go" id="noApply" disabled data-i18n="no.apply">Terapkan no urut</button>
+        <button class="btn-ghost" id="modeExit" data-i18n="common.done">Selesai</button>
+      </span>
+    </div>
+
+    <div id="loading" class="skel"><div></div><div></div><div></div><div></div></div>
+    <div id="error" class="state" hidden></div>
+    <div id="grid" class="grid" hidden></div>
+    <button id="more" class="more" hidden></button>
+    <div id="empty" class="state" hidden></div>
+  </main>
+</div>
+
+<footer>
+  <p class="upd" data-i18n="db.updated">Database last updated 27/10/2026</p>
+  <p class="foot" data-i18n-html="footer">
+    Entri dan ikon dibaca langsung dari folder
+    <code>D:\WORK\MINI WORLD DB\DATA\&lt;indu&gt;\&lt;kategori&gt;</code>
+    (<code>data_id\entries.json</code> + <code>icon_webp\</code>) — bukan dari database situs.
+    Kategori mengikuti nama folder. Nama pada bahasa selain English/中文 adalah hasil
+    terjemahan mesin dari repo Miniworld-DB. Entri yang dihapus dipindah ke
+    <code>DATA\_trash</code>, jadi masih bisa dikembalikan.
+    Nama yang disunting lewat tombol <b>UBAH</b> ikut tersimpan ke
+    <code>entries.json</code> kategori tsb.
+  </p>
+</footer>
+
+<div id="edwrap" class="edwrap" hidden>
+  <div class="edbox" role="dialog" aria-modal="true" aria-labelledby="edTitle">
+    <h4 id="edTitle" data-i18n="ed.title">Ubah nama block</h4>
+    <p class="edctx" id="edCtx"></p>
+    <label><span data-i18n="ed.e">Nama (English)</span>
+      <input type="text" id="edE" maxlength="120" spellcheck="false" autocomplete="off">
+    </label>
+    <label><span data-i18n="ed.z">Nama (中文)</span>
+      <input type="text" id="edZ" maxlength="120" spellcheck="false" autocomplete="off">
+    </label>
+    <p class="ederr" id="edErr" hidden></p>
+    <div class="edact">
+      <button class="btn-ghost" type="button" id="edCancel" data-i18n="common.cancel">Batal</button>
+      <button class="go" type="button" id="edSave" data-i18n="common.save">Simpan</button>
+    </div>
+    <p class="edhint" data-i18n-html="ed.hint">Enter = simpan · Esc = batal — hasilnya ditulis ke
+      <code>data_id\entries.json</code> pada kategori entri tsb.</p>
+  </div>
+</div>
+
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script src="i18n.js" defer></script>
+<script src="i18n-more.js" defer></script>
+<script src="app.js" defer></script>
+</body>
+</html>

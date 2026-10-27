@@ -1,0 +1,58 @@
+{
+  "grid": {
+    "x": 364,
+    "y": 217,
+    "w": 1409,
+    "h": 563,
+    "cols": 10,
+    "rows": 4
+  },
+  "safe_clear": {
+    "x": 900,
+    "y": 155
+  },
+  "cell_inset": 8,
+  "icon": {
+    "trim": true,
+    "remove_bg": true,
+    "out_size": 128,
+    "flood_thresh": 14,
+    "erode": 1
+  },
+  "mem": {
+    "addr": "0x2d130540",
+    "type": "u32",
+    "ptr_chain": []
+  },
+  "process_hint": {
+    "pid": null,
+    "name": "MiniGameApp.exe"
+  },
+  "timing": {
+    "hover_ms": 150,
+    "tooltip_ms": 400,
+    "tooltip_timeout_ms": 1500,
+    "settle_ms": 180,
+    "jitter_ms": 80,
+    "realign_tol_px": 8,
+    "auto_realign_px": 45
+  },
+  "ocr": {
+    "engine": "tesseract",
+    "langs": "eng",
+    "scale": 2,
+    "invert": true
+  },
+  "hotkey": {
+    "calibrate": "F6",
+    "grid_ok": "F7",
+    "next_page": "F9",
+    "stop": "F10"
+  },
+  "output": {
+    "dir": "output",
+    "icons": "output/icons",
+    "jsonl": "output/scan.jsonl",
+    "shots": "output/debug"
+  }
+}

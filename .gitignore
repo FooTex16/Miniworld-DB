@@ -1,0 +1,7 @@
+# artefak Python
+__pycache__/
+*.py[cod]
+
+# hasil pemindaian ikon — dibuat ulang oleh scan.py, 57 MB, bukan bagian repo
+tools/icon-scanner/output/
+tools/icon-scanner/temp/
