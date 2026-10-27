@@ -9,11 +9,11 @@ const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
 
-const APP = __dirname + '/app';
+const ROOT = path.join(__dirname, '..', '..');   // kamus ada di root repo
 const ctx = { window: {} };
 vm.createContext(ctx);
 for (const f of ['i18n.js', 'i18n-more.js']) {
-  vm.runInContext(fs.readFileSync(path.join(APP, f), 'utf8'), ctx, { filename: f });
+  vm.runInContext(fs.readFileSync(path.join(ROOT, f), 'utf8'), ctx, { filename: f });
 }
 const D = ctx.window.MWDB_I18N || {};
 
@@ -22,7 +22,7 @@ const en = Object.keys(D.en || {});
 let bad = 0;
 const fail = m => { console.log('  GAGAL ' + m); bad++; };
 
-if (en.length !== 158) fail(`jumlah kunci en = ${en.length}, diharapkan 158`);
+if (en.length !== 161) fail(`jumlah kunci en = ${en.length}, diharapkan 161`);
 
 for (const L of LOKAL) {
   if (!D[L]) { fail(`${L} tidak ada`); continue; }

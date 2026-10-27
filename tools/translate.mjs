@@ -2,8 +2,11 @@
 /**
  * translate.mjs
  * -------------
- * Menerjemahkan nama entri di data/index.json ke beberapa bahasa
- * lalu menyimpannya di data/lang/<kode>.json (perata dengan indeks entri).
+ * Menerjemahkan nama entri di data_old/index.json ke beberapa bahasa
+ * lalu menyimpannya di data_old/lang/<kode>.json (perata dengan indeks entri).
+ *
+ * Catatan: terjemahan untuk data LIVE (<repo>/data/lang) dibuat ulang oleh
+ * tools/local-db/export_live.py dengan memetakan id dari arsip ini.
  *
  * Sumber teks: nama Inggris bila ada, kalau tidak nama Mandarin.
  * Hasil mentah di-cache di tools/sources/translations.cache.json supaya
@@ -22,8 +25,8 @@ import { fileURLToPath } from 'node:url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(__dirname, '..');
 const CACHE_FILE = path.join(__dirname, 'sources', 'translations.cache.json');
-const INDEX_FILE = path.join(ROOT, 'data', 'index.json');
-const LANG_DIR = path.join(ROOT, 'data', 'lang');
+const INDEX_FILE = path.join(ROOT, 'data_old', 'index.json');
+const LANG_DIR = path.join(ROOT, 'data_old', 'lang');
 
 const LANGUAGES = [
   { code: 'id', label: 'Bahasa Indonesia', sl: 'auto' },

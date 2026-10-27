@@ -1,7 +1,9 @@
 # MiniWorld DB — versi localhost
 
-Tampilannya **sama persis** dengan situs MiniWorld DB yang di Vercel
-(<https://miniworlddb.vercel.app>), tetapi datanya diambil dari folder lokal:
+Tampilannya **sama persis** dengan situs LIVE di Vercel
+(<https://miniworlddb.vercel.app>) — keduanya memakai `index.html`, `app.js`, dan
+`i18n*.js` yang sama di **root repo**. Bedanya hanya sumber datanya: versi ini
+mengambil folder lokal:
 
 ```
 D:\WORK\MINI WORLD DB\DATA\<indu>\<kategori>\
@@ -21,7 +23,9 @@ yang dipakai untuk URL ikon, hapus, dan ubah no urut. Tampilan sidebar memakai
 `<indu> / <nama>` supaya tidak tertukar. Folder diawali `_` (mis. `_trash`)
 dianggap bukan kategori.
 
-Situs Vercel **tidak disentuh**; file ini hanya menambah folder `tools/local-db`.
+Situs Vercel memakai berkas UI yang sama; `server.py` menyajikannya dari root repo
+lewat `APP = SITE`, jadi tidak ada salinan yang bisa menyimpang. Badge di topbar
+menampilkan **LOCAL** di server ini dan **LIVE** di situs.
 
 ## Cara jalankan
 
@@ -157,6 +161,47 @@ Data entri yang hilang **selalu masih ada** di
 `page`/`row`/`col`) — jadi entri yang terlanjur dihapus bisa dipulihkan
 100% dengan menggabungkan log scan + ikon di `_trash` + label grup `l`/`s`
 dari `data/index.json`.
+
+## Ekspor ke situs LIVE
+
+Situs di Vercel adalah **situs statis** — tidak ada `server.py`, jadi datanya harus
+dibawa sebagai berkas. `export_live.py` menyalin isi folder `DATA\` ke `<repo>\data\`:
+
+```bash
+python tools/local-db/export_live.py      # tidak perlu server berjalan
+```
+
+| Yang ditulis | Isi |
+|---|---|
+| `data/db.json` | `{meta, entries}` — persis balasan `GET /api/db`, path ikon diganti jadi `data/icons/…` |
+| `data/index.json` | format situs (id, nama EN/中文, grup, path) — dipakai `sync_site()` dan `build_langs()` |
+| `data/lang/*.json` | `n` dipetakan ulang lewat id dari arsip, `sig` dihitung ulang |
+| `data/icons/<indu>/<kategori>/<id>.webp` | 1.678 ikon; ikon yatim dibuang |
+
+`data/index.json` dan `data/db.json` sengaja diurutkan sama, sehingga satu file
+`data/lang/*.json` bisa dipakai dua-duanya (posisi `n` untuk server lokal, `sig`
+untuk halaman LIVE). Keterangan **Database update terakhir …** di footer ikut
+diperbarui ke tanggal ekspor.
+
+Cadangan data situs lama ada di `data_old/` — di situlah `tools/*.mjs` (pipeline
+build & translate) menulis sekarang.
+
+Alur memperbarui situs:
+
+```bash
+python tools/local-db/export_live.py
+git add -A && git commit -m "Perbarui data LIVE" && git push
+```
+
+## Berkas di folder ini
+
+```
+server.py        # server HTTP + endpoint di atas (APP = root repo)
+export_live.py   # ekspor DATA\ -> data/ untuk situs LIVE
+check_i18n.js    # validasi 8 x 161 kunci i18n (kamus di root repo)
+start.bat        # jalankan server + buka browser
+README.md        # berkas ini
+```
 
 ## Catatan teknis
 

@@ -2,9 +2,12 @@
 /**
  * build-index.mjs
  * ---------------
- * Menggabungkan (a) daftar file ikon di folder icons_cache tiap kategori data/,
+ * Menggabungkan (a) daftar file ikon di folder icons_cache tiap kategori data_old/,
  * (b) tabel ID resmi dari tools/sources/* menjadi satu berkas
- * data/index.json yang dibaca index.html.
+ * data_old/index.json (cadangan data situs lama).
+ *
+ * Catatan: data LIVE di <repo>/data kini dibuat oleh tools/local-db/export_live.py
+ * dari folder DATA\. Skrip ini hanya merawat arsip data_old/.
  *
  * Pemakaian:  node tools/build-index.mjs
  * Jalankan lagi setiap kali ikon atau sumber data bertambah.
@@ -16,7 +19,7 @@ import { fileURLToPath } from 'node:url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(__dirname, '..');
 const SOURCES = path.join(__dirname, 'sources');
-const DATA = path.join(ROOT, 'data');
+const DATA = path.join(ROOT, 'data_old');
 
 /** Folder ikon yang tersedia di repo. */
 const ICON_FOLDERS = ['blocks', 'creature', 'gameplay', 'items'];
@@ -77,7 +80,7 @@ function scanIcons() {
         continue;
       }
       const id = Number(base);
-      const rel = `data/${folder}/icons_cache/${file}`;
+      const rel = `data_old/${folder}/icons_cache/${file}`;
       if (!byId.has(id)) byId.set(id, { path: rel, folders: [folder] });
       else byId.get(id).folders.push(folder);
     }
@@ -185,7 +188,7 @@ function main() {
   fs.writeFileSync(out, JSON.stringify(index), 'utf8');
 
   const kb = (fs.statSync(out).size / 1024).toFixed(1);
-  console.log(`data/index.json ditulis (${kb} KB)`);
+  console.log(`data_old/index.json ditulis (${kb} KB)`);
   console.log(`  total entri : ${entries.length}`);
   console.log(`  punya ikon  : ${withIcon}`);
   console.log(`  punya nama  : ${named}`);

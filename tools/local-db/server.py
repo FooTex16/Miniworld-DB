@@ -47,7 +47,6 @@ from pathlib import Path
 from urllib.parse import quote, unquote, urlparse
 
 HERE = Path(__file__).resolve().parent
-APP = HERE / "app"
 
 DATA = Path(r"D:\WORK\MINI WORLD DB\DATA")
 # kategori = subfolder DUA tingkat di bawah DATA, contoh:
@@ -66,6 +65,10 @@ SKIP_TOP = {"_trash"}                        # folder induk yang bukan kategori
 SITE = Path(r"D:\WORK\MINI WORLD DB\Miniworld-DB")
 SITE_INDEX = SITE / "data" / "index.json"
 SITE_LANG = SITE / "data" / "lang"
+
+# berkas statis (index.html, app.js, i18n*.js) ada di ROOT repo — dipakai
+# bersama oleh server lokal dan situs LIVE, jadi tampilannya selalu sama.
+APP = SITE
 
 # urutan block di game = urutan saat scanner membaca grid
 # (halaman -> baris -> kolom). export.py mengurutkan entries.json berdasarkan ID,

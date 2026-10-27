@@ -169,6 +169,8 @@
     background: var(--panel); border: 1px solid var(--line); border-radius: 6px;
     font-size: 12px; color: var(--dim); line-height: 1.55;
   }
+  .note p { margin: 0 0 9px; }
+  .note p:last-child { margin-bottom: 0; }
   .note b { color: var(--muted); font-weight: 600; }
 
   /* ---------- toolbar ---------- */
@@ -305,7 +307,8 @@
   }
   footer a { color: var(--muted); text-decoration: underline; text-underline-offset: 2px; }
   footer p { margin: 0 0 7px; }
-  footer .upd { color: var(--muted); }
+  footer p:last-child { margin-bottom: 0; }
+  footer .upd { color: var(--muted); letter-spacing: .01em; }
 
   #toast {
     position: fixed; left: 50%; bottom: 26px; transform: translate(-50%, 14px);
@@ -352,25 +355,281 @@
   @media (prefers-reduced-motion: reduce) {
     * { transition: none !important; animation: none !important; }
   }
+
+  /* ---------- lokal: pilih-banyak, duplikat, hapus ---------- */
+  /* .mode = penanda sumber data: LOCAL (server lokal) / LIVE (situs statis) */
+  .brand .mode {
+    color: var(--ok); border-color: rgba(116,198,157,.4);
+    background: rgba(116,198,157,.08); letter-spacing: .1em;
+  }
+  .brand .mode.live {
+    color: #58a6d8; border-color: rgba(88,166,216,.45);
+    background: rgba(88,166,216,.1);
+  }
+  .selrow {
+    position: sticky; top: 57px; z-index: 45;
+    display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+    padding: 9px 0 11px; margin: -2px 0 14px;
+    background: var(--bg); border-bottom: 1px solid var(--line);
+  }
+  .selrow .opt { padding: 0; }
+  .selrow .stat-line { font-family: var(--mono); font-size: 11.5px; color: var(--muted); }
+  .selrow .stat-line b { color: var(--text); }
+  .selrow .stat-line .d { color: #ff9a80; }
+  .selrow .stat-line .u { color: var(--ok); }
+  .btn-danger {
+    background: rgba(214,84,60,.14); border: 1px solid rgba(214,84,60,.5);
+    color: #f08a72; border-radius: 5px; padding: 5px 15px;
+    font-size: 12.5px; font-weight: 700; letter-spacing: .08em; cursor: pointer;
+    transition: background .1s, color .1s;
+  }
+  .btn-danger:hover:not(:disabled) { background: rgba(214,84,60,.3); color: #ffb9a6; }
+  .btn-danger:disabled { opacity: .38; cursor: not-allowed; }
+  .btn-ghost {
+    background: var(--panel-2); border: 1px solid var(--line-2);
+    color: var(--muted); border-radius: 5px; padding: 5px 12px;
+    font-size: 12.5px; cursor: pointer;
+  }
+  .btn-ghost:hover:not(:disabled) { color: var(--text); background: var(--panel-3); }
+  .btn-ghost:disabled { opacity: .38; cursor: not-allowed; }
+
+  .card { padding-left: 9px; }
+  .card .pick {
+    appearance: none; -webkit-appearance: none; margin: 0;
+    width: 15px; height: 15px; flex-shrink: 0;
+    border: 1px solid var(--line-2); border-radius: 3px;
+    background: var(--panel-3); cursor: pointer; position: relative;
+    transition: background .1s, border-color .1s;
+  }
+  .card .pick:hover { border-color: var(--dim); }
+  .card .pick:checked { background: var(--accent); border-color: var(--accent); }
+  .card .pick:checked::after {
+    content: ""; position: absolute; left: 4.5px; top: 1px;
+    width: 4px; height: 8px; border: solid var(--accent-ink);
+    border-width: 0 2px 2px 0; transform: rotate(45deg);
+  }
+  .card .pick:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .card.sel { border-color: var(--accent); background: var(--panel-2); }
+  .card.dup { border-color: rgba(214,84,60,.5); }
+  .tag {
+    font-family: var(--mono); font-size: 9.5px; font-weight: 700;
+    letter-spacing: .1em; text-transform: uppercase;
+    border-radius: 3px; padding: 1px 4px; flex-shrink: 0;
+    border: 1px solid transparent; white-space: nowrap;
+  }
+  .tag.dup  { color: #ff9a80; background: rgba(214,84,60,.16); border-color: rgba(214,84,60,.5); }
+  .tag.uniq { color: var(--ok); background: rgba(116,198,157,.12); border-color: rgba(116,198,157,.4); }
+  .grid.list .card .pick { width: 14px; height: 14px; }
+
+  /* ---------- lokal: no urut & urut seperti di game ---------- */
+  .range { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+  .range label {
+    display: flex; align-items: center; gap: 4px;
+    font-size: 11.5px; color: var(--dim);
+  }
+  .range input {
+    width: 64px; height: 26px; padding: 0 6px;
+    background: var(--panel-2); border: 1px solid var(--line-2);
+    border-radius: 4px; font-family: var(--mono); font-size: 12px;
+    color: var(--text); outline: none; transition: border-color .1s, background .1s;
+  }
+  .range input::placeholder { color: var(--dim); font-size: 11px; }
+  .range input:focus { border-color: var(--accent); background: var(--panel-3); }
+  .range input[type=number] { -moz-appearance: textfield; appearance: textfield; }
+  .range input::-webkit-outer-spin-button,
+  .range input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  .range .btn-ghost { padding: 4px 9px; font-size: 11.5px; }
+  .rng-hint {
+    margin: 7px 0 0; font-family: var(--mono); font-size: 10.5px;
+    line-height: 1.5; color: var(--dim); letter-spacing: .02em;
+  }
+  .rng-hint b { color: var(--muted); font-weight: 600; }
+  .no {
+    font-family: var(--mono); font-size: 10.5px; font-weight: 600;
+    color: var(--muted); background: var(--panel-3);
+    border: 1px solid var(--line-2); border-radius: 4px;
+    padding: 2px 5px; flex-shrink: 0; letter-spacing: .02em;
+  }
+  .grid.list .no { font-size: 10px; padding: 1px 4px; }
+  .seg button[disabled] { opacity: .5; cursor: default; }
+
+  /* ---------- lokal: ubah no urut ---------- */
+  .mode-wrap {
+    display: inline-flex; align-items: center; gap: 13px; flex-wrap: wrap;
+    padding: 2px 0;
+  }
+  .mode-wrap .mode-hint {
+    font-family: var(--mono); font-size: 11px; color: var(--dim);
+    letter-spacing: .02em;
+  }
+  .mode-wrap .btn-ghost { padding: 4px 11px; font-size: 12px; }
+  .mode-wrap .btn-ghost.go {
+    background: rgba(217,164,65,.16); border-color: rgba(217,164,65,.55);
+    color: #ffd9a0; font-weight: 700;
+  }
+  .mode-wrap .btn-ghost.go:hover:not(:disabled) {
+    background: rgba(217,164,65,.32); color: #fff0d6;
+  }
+  .card.picked { border-color: var(--accent); background: rgba(217,164,65,.08); }
+  .pno {
+    font-family: var(--mono); font-size: 9.5px; font-weight: 700;
+    letter-spacing: .06em; white-space: nowrap;
+    border: 1px solid rgba(217,164,65,.55); border-radius: 3px;
+    padding: 1px 4px; flex-shrink: 0;
+    color: #ffd9a0; background: rgba(217,164,65,.14);
+  }
+  .card .no { cursor: pointer; }
+  .card .no:hover { border-color: var(--accent); color: var(--text); }
+  .no.editing { padding: 1px 2px 2px; border-color: var(--accent); cursor: default; }
+  .no-in {
+    width: 54px; height: 20px; padding: 0 3px;
+    background: var(--panel-2); border: 1px solid var(--accent);
+    border-radius: 3px; color: var(--text);
+    font-family: var(--mono); font-size: 11px; outline: none;
+    -moz-appearance: textfield; appearance: textfield;
+  }
+  .no-in::-webkit-outer-spin-button,
+  .no-in::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  .no-why {
+    display: block; margin-top: 5px; font-family: var(--mono);
+    font-size: 10.5px; color: var(--dim); letter-spacing: .02em;
+  }
+  #modeNo.on {
+    background: rgba(217,164,65,.16); border-color: rgba(217,164,65,.55);
+    color: #ffd9a0; font-weight: 700;
+  }
+  /* ---------- lokal: ubah nama block ---------- */
+  .card .ed {
+    flex-shrink: 0; padding: 3px 5px;
+    font-family: var(--mono); font-size: 9.5px; font-weight: 700;
+    letter-spacing: .1em; text-transform: uppercase;
+    color: var(--dim); background: transparent;
+    border: 1px solid var(--line-2); border-radius: 4px;
+    cursor: pointer; opacity: .5;
+    transition: opacity .1s, border-color .1s, color .1s;
+  }
+  .card:hover .ed { opacity: 1; }
+  .card .ed:hover { color: #ffd9a0; border-color: rgba(217,164,65,.55); }
+  .card .ed:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+  .edwrap {
+    position: fixed; inset: 0; z-index: 60;
+    background: rgba(0,0,0,.55);
+    display: flex; align-items: center; justify-content: center;
+    padding: 20px;
+  }
+  .edwrap[hidden] { display: none; }
+  .edbox {
+    width: min(430px, 100%);
+    background: var(--panel); border: 1px solid var(--line-2);
+    border-radius: 7px; padding: 15px 16px;
+    box-shadow: 0 12px 36px rgba(0,0,0,.5);
+  }
+  .edbox h4 {
+    margin: 0 0 4px; font-size: 13px; letter-spacing: .07em;
+    text-transform: uppercase; color: var(--text);
+  }
+  .edctx {
+    margin: 0 0 13px; font-family: var(--mono); font-size: 11px;
+    color: var(--dim); letter-spacing: .02em;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .edbox label {
+    display: block; margin-bottom: 10px;
+    font-size: 10.5px; letter-spacing: .07em; text-transform: uppercase;
+    color: var(--muted);
+  }
+  .edbox input[type=text] {
+    display: block; width: 100%; margin-top: 5px;
+    height: 31px; padding: 0 9px;
+    background: var(--panel-2); border: 1px solid var(--line-2);
+    border-radius: 4px; color: var(--text); font-size: 13.5px;
+    outline: none; text-transform: none; letter-spacing: 0;
+    transition: border-color .1s, background .1s;
+  }
+  .edbox input[type=text]:focus { border-color: var(--accent); background: var(--panel-3); }
+  .ederr {
+    margin: 0; font-family: var(--mono); font-size: 11px;
+    color: #ff9a80; letter-spacing: .02em; line-height: 1.5;
+  }
+  .ederr[hidden] { display: none; }
+  .edact { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
+  .edact .go {
+    background: rgba(217,164,65,.16); border: 1px solid rgba(217,164,65,.55);
+    color: #ffd9a0; font-weight: 700; border-radius: 5px; padding: 5px 16px;
+    font-size: 12.5px; cursor: pointer; transition: background .1s, color .1s;
+  }
+  .edact .go:hover:not(:disabled) { background: rgba(217,164,65,.32); color: #fff0d6; }
+  .edact .go:disabled { opacity: .4; cursor: default; }
+  .edhint {
+    margin: 11px 0 0; font-family: var(--mono); font-size: 10.5px;
+    line-height: 1.6; color: var(--dim); letter-spacing: .02em;
+  }
+
+  /* ---------- lokal: navigasi dua tingkat + urutkan sub kategori ---------- */
+  .cats li.par {
+    font-weight: 700; color: var(--text);
+    background: var(--panel-2); letter-spacing: .02em;
+  }
+  .cats li.par:hover { background: var(--panel-3); }
+  .cats li.sub { padding-left: 27px; }
+  .cats li.sub .dot { opacity: .5; width: 5px; height: 5px; }
+  .cats li.sub .urut {
+    font-family: var(--mono); font-size: 9.5px; font-weight: 700;
+    letter-spacing: .06em; white-space: nowrap; flex-shrink: 0;
+    color: #ffd9a0; background: rgba(217,164,65,.14);
+    border: 1px solid rgba(217,164,65,.55); border-radius: 3px; padding: 0 4px;
+  }
+  .cats.mode li.sub { cursor: crosshair; }
+  .cats.mode li.sub:hover { background: rgba(217,164,65,.1); color: #ffd9a0; }
+  .cats.mode li.sub.pick { background: rgba(217,164,65,.14); color: #ffd9a0; }
+  .catbar {
+    display: flex; flex-direction: column; gap: 8px;
+    margin: -14px 0 18px;
+  }
+  .catbar:empty { display: none; }
+  .catbar > .btn-ghost { width: 100%; font-size: 11.5px; padding: 5px 8px; }
+  .catbar .mode-wrap { flex-direction: column; align-items: stretch; gap: 8px; }
+  .catbar .mode-hint { line-height: 1.5; }
+
+  /* ---------- lokal: tampilan ikon saja (tanpa nama) ---------- */
+  .grid.icon {
+    grid-template-columns: repeat(auto-fill, minmax(74px, 1fr)); gap: 6px;
+  }
+  .grid.icon .card { justify-content: center; padding: 9px 6px; gap: 0; }
+  .grid.icon .meta, .grid.icon .id, .grid.icon .no, .grid.icon .tag,
+  .grid.icon .ed, .grid.icon .pno { display: none; }
+  .grid.icon .thumb { width: 54px; height: 54px; }
+  .grid.icon .pick { position: absolute; top: 4px; right: 4px; }
+
+  /* ---------- lokal: sembunyikan navigasi ---------- */
+  .layout.nav-off { grid-template-columns: minmax(0, 1fr); }
+  .layout.nav-off .side { display: none; }
+
+  @media (max-width: 620px) {
+    .grid.icon { grid-template-columns: repeat(auto-fill, minmax(62px, 1fr)); }
+    .grid.icon .thumb { width: 46px; height: 46px; }
+  }
 </style>
 </head>
 <body>
 
 <header class="topbar">
-  <div class="brand"><b>MiniWorld</b><span>ID DB</span></div>
+  <div class="brand"><b>MiniWorld</b><span>ID DB</span><span class="mode">LOCAL</span></div>
 
   <div class="search">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
       <circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path>
     </svg>
     <input id="q" type="search" autocomplete="off" spellcheck="false"
-           placeholder="Cari nama block, item, atau ketik ID…" aria-label="Cari entri">
+           placeholder="Cari nama block, item, atau ketik ID…"
+           data-i18n-ph="search.ph" aria-label="Cari entri" data-i18n-aria="search.aria">
     <kbd>/</kbd>
   </div>
 
   <div class="topbar-right">
     <span class="stat" id="topStat">memuat…</span>
-    <select id="lang" aria-label="Bahasa nama">
+    <select id="lang" aria-label="Bahasa nama" data-i18n-aria="lang.aria">
       <option value="en">English</option>
       <option value="id">Bahasa Indonesia</option>
       <option value="zh">中文</option>
@@ -390,22 +649,44 @@
 
 <div class="layout">
   <aside class="side">
-    <h3>Kategori</h3>
+    <h3 data-i18n="side.cat">Kategori</h3>
     <ul class="cats" id="cats">
       <li data-cat="all" class="on"><span class="dot" style="background:var(--muted)"></span>Semua<span class="n" data-n="all">—</span></li>
-      <li data-cat="blocks"><span class="dot"></span>Blocks<span class="n" data-n="blocks">—</span></li>
-      <li data-cat="gameplay"><span class="dot"></span>Gameplay<span class="n" data-n="gameplay">—</span></li>
-      <li data-cat="creature"><span class="dot"></span>Creature<span class="n" data-n="creature">—</span></li>
-      <li data-cat="items"><span class="dot"></span>Items<span class="n" data-n="items">—</span></li>
     </ul>
+    <div class="catbar" id="catBar">
+      <button class="btn-ghost" type="button" id="catSortOn" hidden
+              data-i18n="cat.sortBtn">Urutkan sub kategori</button>
+      <span class="mode-wrap" id="catMode" hidden>
+        <span class="mode-hint" data-i18n="cat.hint">klik sub kategori berurutan — yang pertama jadi No.1, kedua No.2, …</span>
+        <button class="btn-ghost go" type="button" id="catApply" disabled
+                data-i18n="cat.apply">Terapkan urutan</button>
+        <button class="btn-ghost" type="button" id="catReset" hidden
+                data-i18n="cat.reset">Urutan asli</button>
+        <button class="btn-ghost" type="button" id="catExit"
+                data-i18n="common.done">Selesai</button>
+      </span>
+    </div>
 
-    <h3>Filter</h3>
-    <label class="opt"><input type="checkbox" id="onlyIcon"> Hanya yang ada ikonnya</label>
-    <label class="opt"><input type="checkbox" id="onlyName"> Hanya yang punya nama</label>
+    <h3 data-i18n="side.filter">Filter</h3>
+    <label class="opt"><input type="checkbox" id="onlyIcon"> <span data-i18n="filter.icon">Hanya yang ada ikonnya</span></label>
+    <label class="opt"><input type="checkbox" id="onlyName"> <span data-i18n="filter.name">Hanya yang punya nama</span></label>
+    <label class="opt"><input type="checkbox" id="onlyDup"> <span data-i18n="filter.dup">Hanya yang duplikat</span></label>
+    <label class="opt"><input type="checkbox" id="onlyUniq"> <span data-i18n="filter.uniq">Hanya yang unik</span></label>
+
+    <h3 data-i18n="side.no">No urut</h3>
+    <div class="range">
+      <label><span data-i18n="range.from">dari</span> <input type="number" id="noFrom" min="1" value="1" inputmode="numeric" aria-label="No urut dari" data-i18n-aria="range.ariaFrom"></label>
+      <label><span data-i18n="range.to">s/d</span> <input type="number" id="noTo" min="1" placeholder="habis" inputmode="numeric" aria-label="No urut sampai" data-i18n-aria="range.ariaTo"></label>
+      <button class="btn-ghost" type="button" id="noReset" data-i18n="common.all">Semua</button>
+    </div>
+    <p class="rng-hint" id="noHint">No. 1 – habis · urut seperti di game</p>
 
     <div class="note">
-      <b>Cara pakai:</b> klik satu entri untuk menyalin ID-nya.
-      Tekan <b>/</b> untuk fokus ke pencarian.
+      <p data-i18n-html="note.1"><b>Cara pakai:</b> klik satu entri untuk menyalin ID-nya. Centang banyak entri sekaligus untuk melihat berapa yang <b>duplikat</b> dan berapa yang <b>unik</b>, lalu tekan <b style="color:#f08a72">HAPUS</b> untuk membuangnya. Tekan <b>/</b> untuk fokus ke pencarian, <b>Del</b> untuk hapus pilihan.</p>
+      <p data-i18n-html="note.2"><b>No urut</b> = posisi block di dalam kategori, mengikuti urutan aslinya di game. Isi <i>dari</i> / <i>s/d</i> untuk mengambil rentang (mis. 1–40), kosongkan <i>s/d</i> untuk sampai habis. Tombol <b>Game</b> mengatur tampilan persis seperti urutan di game.</p>
+      <p data-i18n-html="note.3"><b>Ubah no urut:</b> klik chip <b>No.N</b> pada kartu untuk mengganti nomor satu block saja (angka milik block lain akan bertukar dengannya). Atau tekan <b>Ubah no urut</b>, lalu klik kartu berurutan — yang pertama jadi No.1, kedua No.2, dst. — dan tekan <b>Terapkan no urut</b>. <b>Urutan asli</b> mengembalikan seperti hasil scan.</p>
+      <p data-i18n-html="note.4"><b>Ubah nama:</b> tekan tombol <b>UBAH</b> di kartu (muncul saat kursor di atas kartu), isi nama <b>English</b> dan/atau <b>中文</b>, lalu <b>Simpan</b> (<kbd>Enter</kbd> simpan, <kbd>Esc</kbd> batal). Hasilnya ditulis ke <code>data_id\entries.json</code> kategori tsb dan ikut disinkronkan ke data situs untuk translate berikutnya; id, label grup, dan OCR tetap tidak bisa diedit.</p>
+      <p data-i18n-html="note.5"><b>Sumber data:</b> <code>DATA\&lt;indu&gt;\&lt;kategori&gt;</code> — kategori mengikuti nama folder. Sub kategori hanya muncul di navigasi setelah induknya dipilih, dan urutannya bisa disusun lewat tombol <b>Urutkan sub kategori</b>.</p>
     </div>
   </aside>
 
@@ -413,14 +694,36 @@
     <div class="toolbar">
       <h1 id="title">Semua</h1>
       <span class="count" id="count">—</span>
-      <div class="seg" role="group" aria-label="Urutan">
+      <span class="count" id="dupStat"></span>
+      <div class="seg" role="group" aria-label="Urutan" data-i18n-aria="seg.sort">
         <button data-sort="id" class="on">ID</button>
-        <button data-sort="name">Nama</button>
+        <button data-sort="name" data-i18n="sort.name">Nama</button>
+        <button data-sort="game" data-i18n="sort.game" title="Urutkan persis seperti urutan block di game" data-i18n-title="sort.gameTip">Game</button>
       </div>
-      <div class="seg" role="group" aria-label="Tampilan">
-        <button data-view="grid" class="on">Kartu</button>
-        <button data-view="list">Daftar</button>
+      <div class="seg" role="group" aria-label="Tampilan" data-i18n-aria="seg.view">
+        <button data-view="grid" class="on" data-i18n="view.grid">Kartu</button>
+        <button data-view="icon" data-i18n="view.icon">Ikon</button>
+        <button data-view="list" data-i18n="view.list">Daftar</button>
       </div>
+      <button class="btn-ghost" type="button" id="navToggle"
+              data-i18n="nav.hide">Sembunyikan navigasi</button>
+    </div>
+
+    <div class="selrow">
+      <label class="opt"><input type="checkbox" id="selAll"> <span data-i18n="sel.all">Pilih semua hasil</span></label>
+      <span class="stat-line" id="selStat"><b>0</b> dipilih</span>
+      <button class="btn-ghost" id="selClear" disabled data-i18n="sel.clear">Bersihkan</button>
+      <button class="btn-danger" id="selDelete" disabled data-i18n="sel.del">HAPUS</button>
+      <button class="btn-ghost" id="modeNo" data-i18n="no.modeBtn"
+              title="Susun ulang no urut: klik kartu berurutan, lalu terapkan" data-i18n-title="no.modeTip">Ubah no urut</button>
+      <button class="btn-ghost" id="noOrderReset" hidden data-i18n="common.all"
+              title="Kembalikan no urut kategori ini seperti hasil scan" data-i18n-title="no.resetTip">Urutan asli</button>
+      <span class="mode-wrap" id="modeWrap" hidden>
+        <span class="mode-hint" data-i18n="no.modeHint">klik kartu berurutan — yang pertama jadi No.1, kedua No.2, …</span>
+        <span class="stat-line" id="pickStat"><b>0</b> dipilih</span>
+        <button class="btn-ghost go" id="noApply" disabled data-i18n="no.apply">Terapkan no urut</button>
+        <button class="btn-ghost" id="modeExit" data-i18n="common.done">Selesai</button>
+      </span>
     </div>
 
     <div id="loading" class="skel"><div></div><div></div><div></div><div></div></div>
@@ -432,361 +735,43 @@
 </div>
 
 <footer>
-  <p class="upd"><b>Database update terakhir tanggal 27/10/2026.</b></p>
-  Data nama entri diambil dari dokumentasi resmi developer Mini World
-  (<a href="https://developers.mini1.cn/wiki/iddatas.html">developers.mini1.cn</a> dan
-  <a href="https://wiki.miniworldgame.com/doku.php?id=developer_center:developer_editor:script:itemid">wiki.miniworldgame.com</a>).
-  Ikon berasal dari folder <code>data/&lt;kategori&gt;/icons_cache</code> di repo ini.
-  Nama pada bahasa selain English/中文 adalah hasil terjemahan mesin.
-  Bila ada entri yang belum punya nama, berarti ID tersebut belum tercantum di tabel resmi.
+  <p class="upd" data-i18n="db.updated">Database last updated 27/10/2026</p>
+  <p class="foot" data-i18n-html="footer">
+    Entri dan ikon dibaca langsung dari folder
+    <code>D:\WORK\MINI WORLD DB\DATA\&lt;indu&gt;\&lt;kategori&gt;</code>
+    (<code>data_id\entries.json</code> + <code>icon_webp\</code>) — bukan dari database situs.
+    Kategori mengikuti nama folder. Nama pada bahasa selain English/中文 adalah hasil
+    terjemahan mesin dari repo Miniworld-DB. Entri yang dihapus dipindah ke
+    <code>DATA\_trash</code>, jadi masih bisa dikembalikan.
+    Nama yang disunting lewat tombol <b>UBAH</b> ikut tersimpan ke
+    <code>entries.json</code> kategori tsb.
+  </p>
 </footer>
+
+<div id="edwrap" class="edwrap" hidden>
+  <div class="edbox" role="dialog" aria-modal="true" aria-labelledby="edTitle">
+    <h4 id="edTitle" data-i18n="ed.title">Ubah nama block</h4>
+    <p class="edctx" id="edCtx"></p>
+    <label><span data-i18n="ed.e">Nama (English)</span>
+      <input type="text" id="edE" maxlength="120" spellcheck="false" autocomplete="off">
+    </label>
+    <label><span data-i18n="ed.z">Nama (中文)</span>
+      <input type="text" id="edZ" maxlength="120" spellcheck="false" autocomplete="off">
+    </label>
+    <p class="ederr" id="edErr" hidden></p>
+    <div class="edact">
+      <button class="btn-ghost" type="button" id="edCancel" data-i18n="common.cancel">Batal</button>
+      <button class="go" type="button" id="edSave" data-i18n="common.save">Simpan</button>
+    </div>
+    <p class="edhint" data-i18n-html="ed.hint">Enter = simpan · Esc = batal — hasilnya ditulis ke
+      <code>data_id\entries.json</code> pada kategori entri tsb.</p>
+  </div>
+</div>
 
 <div id="toast" role="status" aria-live="polite"></div>
 
-<script>
-(() => {
-  'use strict';
-
-  const PAGE = 120;
-  const $ = id => document.getElementById(id);
-
-  const ui = {
-    q: $('q'), lang: $('lang'), cats: $('cats'), onlyIcon: $('onlyIcon'), onlyName: $('onlyName'),
-    title: $('title'), count: $('count'), grid: $('grid'), more: $('more'), empty: $('empty'),
-    loading: $('loading'), error: $('error'), toast: $('toast'), topStat: $('topStat'),
-  };
-
-  const state = {
-    entries: [],
-    meta: null,
-    cat: 'all',
-    q: '',
-    sort: 'id',
-    view: 'grid',
-    onlyIcon: false,
-    onlyName: false,
-    lang: localStorage.getItem('mwdb.lang') || 'en',
-    translations: {},        // kode -> array nama selaras indeks entri
-    filtered: [],
-    shown: 0,
-    haystack: null,
-  };
-
-  /* ---------- helpers ---------- */
-
-  const fold = s => s.toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g, '');
-  const fmt = n => n.toLocaleString('id-ID');
-
-  function primary(e, i) {
-    const t = state.translations[state.lang];
-    if (state.lang === 'zh') return e.z || e.e || '';
-    if (state.lang === 'en') return e.e || e.z || '';
-    return (t && t[i]) || e.e || e.z || '';
-  }
-  function secondary(e, i, main) {
-    const alt = state.lang === 'zh' ? e.e : (e.z && e.z !== main) ? e.z : (e.e && e.e !== main) ? e.e : '';
-    return alt || '';
-  }
-  function haystackFor(e, i) {
-    const parts = [String(e.i), e.l || '', e.s || ''];
-    for (const src of [e.e, e.z]) if (src) parts.push(src);
-    const t = state.translations[state.lang];
-    if (t && t[i]) parts.push(t[i]);
-    return fold(parts.filter(Boolean).join(' '));
-  }
-  function ensureHaystack() {
-    if (!state.haystack) state.haystack = state.entries.map(haystackFor);
-  }
-  function dropHaystack() { state.haystack = null; }
-
-  function toast(id, label) {
-    ui.toast.innerHTML = 'ID <code>' + id + '</code> ' + (label || 'disalin');
-    ui.toast.classList.add('on');
-    clearTimeout(toast._t);
-    toast._t = setTimeout(() => ui.toast.classList.remove('on'), 1800);
-  }
-
-  async function copyText(text) {
-    try {
-      await navigator.clipboard.writeText(text);
-      return true;
-    } catch (_) {
-      const ta = document.createElement('textarea');
-      ta.value = text;
-      ta.style.cssText = 'position:fixed;opacity:0';
-      document.body.appendChild(ta);
-      ta.select();
-      let ok = false;
-      try { ok = document.execCommand('copy'); } catch (_) {}
-      ta.remove();
-      return ok;
-    }
-  }
-
-  /* ---------- data ---------- */
-
-  async function loadJson(url) {
-    const res = await fetch(url, { cache: 'no-cache' });
-    if (!res.ok) throw new Error(url + ' → HTTP ' + res.status);
-    return res.json();
-  }
-
-  async function loadIndex() {
-    const data = await loadJson('data/index.json');
-    state.entries = data.entries;
-    state.meta = data.meta;
-    ui.lang.value = state.lang;
-  }
-
-  async function loadLang(code) {
-    if (code === 'en' || code === 'zh' || state.translations[code]) return;
-    try {
-      const data = await loadJson('data/lang/' + code + '.json');
-      if (!state.meta || data.sig === sig(state.entries)) {
-        state.translations[code] = data.n;
-      }
-    } catch (_) {
-      /* bahasa gagal dimuat → otomatis jatuh ke English */
-    }
-  }
-
-  function sig(entries) {
-    let h = 5381;
-    const s = entries.map(e => e.i).join(',');
-    for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) >>> 0;
-    return h.toString(36);
-  }
-
-  /* ---------- filtering ---------- */
-
-  function rebuild() {
-    ensureHaystack();
-    const term = fold(state.q.trim());
-    const out = [];
-    for (let i = 0; i < state.entries.length; i++) {
-      const e = state.entries[i];
-      if (state.cat !== 'all' && e.c !== state.cat) continue;
-      if (state.onlyIcon && !e.p) continue;
-      if (state.onlyName && !e.e && !e.z) continue;
-      if (term && !state.haystack[i].includes(term)) continue;
-      out.push(i);
-    }
-    if (state.sort === 'name') {
-      out.sort((a, b) => {
-        const na = primary(state.entries[a], a).toLowerCase();
-        const nb = primary(state.entries[b], b).toLowerCase();
-        return na.localeCompare(nb) || state.entries[a].i - state.entries[b].i;
-      });
-    } else {
-      out.sort((a, b) => state.entries[a].i - state.entries[b].i);
-    }
-    state.filtered = out;
-    state.shown = 0;
-    ui.grid.innerHTML = '';
-    ui.empty.hidden = true;
-    renderChunk();
-
-    const catMeta = state.meta.categories.find(c => c.key === state.cat);
-    ui.title.textContent = state.cat === 'all'
-      ? 'Semua'
-      : (state.meta.categories.find(c => c.key === state.cat) || {}).label || state.cat;
-    const withIcon = out.filter(i => state.entries[i].p).length;
-    ui.count.textContent = fmt(out.length) + ' entri' + (withIcon !== out.length ? ' · ' + fmt(withIcon) + ' berikon' : '');
-    if (state.cat !== 'all' && catMeta) ui.title.textContent = catMeta.label;
-  }
-
-  /* ---------- rendering ---------- */
-
-  function cardNode(i) {
-    const e = state.entries[i];
-    const main = primary(e, i);
-    const alt = secondary(e, i, main);
-    const named = !!main;
-
-    const card = document.createElement('button');
-    card.type = 'button';
-    card.className = 'card';
-    card.dataset.id = e.i;
-    card.title = 'Salin ID ' + e.i;
-
-    const thumb = document.createElement('span');
-    thumb.className = 'thumb';
-    if (e.p) {
-      const img = document.createElement('img');
-      img.src = e.p;
-      img.alt = '';
-      img.loading = 'lazy';
-      img.decoding = 'async';
-      img.width = 46;
-      img.height = 46;
-      img.addEventListener('error', () => {
-        thumb.innerHTML = '<span class="ph">#</span>';
-      });
-      thumb.appendChild(img);
-    } else {
-      thumb.innerHTML = '<span class="ph">' + (named ? main.charAt(0).toUpperCase() : '#') + '</span>';
-    }
-
-    const meta = document.createElement('span');
-    meta.className = 'meta';
-    const nm = document.createElement('span');
-    nm.className = 'nm' + (named ? '' : ' empty');
-    nm.textContent = named ? main : 'belum ada nama';
-    meta.appendChild(nm);
-    if (alt) {
-      const nm2 = document.createElement('span');
-      nm2.className = 'nm2';
-      nm2.textContent = alt;
-      meta.appendChild(nm2);
-    }
-    if (e.l) {
-      const sub = document.createElement('span');
-      sub.className = 'sub';
-      sub.textContent = e.l;
-      meta.appendChild(sub);
-    }
-
-    const id = document.createElement('span');
-    id.className = 'id';
-    id.textContent = '#' + e.i;
-
-    card.append(thumb, meta, id);
-    card.addEventListener('click', async () => {
-      const ok = await copyText(String(e.i));
-      if (ok) {
-        card.classList.add('copied');
-        setTimeout(() => card.classList.remove('copied'), 700);
-        toast(e.i, 'disalin');
-      } else {
-        toast(e.i, '— gagal disalin, ID: ');
-      }
-    });
-    return card;
-  }
-
-  function renderChunk() {
-    const total = state.filtered.length;
-    if (!total) {
-      ui.empty.hidden = false;
-      ui.empty.innerHTML = state.q
-        ? '<h4>Tidak ada hasil untuk “' + escapeHtml(state.q) + '”</h4><p>Coba kata kunci lain, atau kosongkan pencarian.</p><button class="btn" id="reset">Reset pencarian</button>'
-        : '<h4>Belum ada entri di kategori ini</h4><p>Data ikon/nama untuk kategori ini belum tersedia di repo.</p>';
-      const reset = $('reset');
-      if (reset) reset.addEventListener('click', () => { ui.q.value = ''; state.q = ''; rebuild(); });
-      ui.more.hidden = true;
-      return;
-    }
-    const end = Math.min(state.shown + PAGE, total);
-    const frag = document.createDocumentFragment();
-    for (let k = state.shown; k < end; k++) frag.appendChild(cardNode(state.filtered[k]));
-    ui.grid.appendChild(frag);
-    state.shown = end;
-    const rest = total - state.shown;
-    ui.more.hidden = rest <= 0;
-    if (rest > 0) ui.more.textContent = 'Tampilkan ' + fmt(Math.min(PAGE, rest)) + ' lagi · sisa ' + fmt(rest);
-  }
-
-  function escapeHtml(s) {
-    return s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-  }
-
-  /* ---------- ui wiring ---------- */
-
-  function fillCounts() {
-    const map = { all: state.meta.total };
-    for (const c of state.meta.categories) map[c.key] = c.count;
-    document.querySelectorAll('#cats .n').forEach(n => {
-      n.textContent = map[n.dataset.n] !== undefined ? fmt(map[n.dataset.n]) : '—';
-    });
-    ui.topStat.innerHTML = '<b>' + fmt(state.meta.total) + '</b> entri · <b>' + fmt(state.meta.withIcon) + '</b> ikon';
-  }
-
-  ui.cats.addEventListener('click', ev => {
-    const li = ev.target.closest('li');
-    if (!li) return;
-    ui.cats.querySelectorAll('li').forEach(x => x.classList.remove('on'));
-    li.classList.add('on');
-    state.cat = li.dataset.cat;
-    rebuild();
-  });
-
-  let debounce;
-  ui.q.addEventListener('input', () => {
-    clearTimeout(debounce);
-    debounce = setTimeout(() => { state.q = ui.q.value; rebuild(); }, 110);
-  });
-
-  ui.onlyIcon.addEventListener('change', () => { state.onlyIcon = ui.onlyIcon.checked; rebuild(); });
-  ui.onlyName.addEventListener('change', () => { state.onlyName = ui.onlyName.checked; rebuild(); });
-
-  document.querySelectorAll('[data-sort]').forEach(btn => btn.addEventListener('click', () => {
-    document.querySelectorAll('[data-sort]').forEach(b => b.classList.remove('on'));
-    btn.classList.add('on');
-    state.sort = btn.dataset.sort;
-    rebuild();
-  }));
-
-  document.querySelectorAll('[data-view]').forEach(btn => btn.addEventListener('click', () => {
-    document.querySelectorAll('[data-view]').forEach(b => b.classList.remove('on'));
-    btn.classList.add('on');
-    state.view = btn.dataset.view;
-    ui.grid.classList.toggle('list', state.view === 'list');
-    localStorage.setItem('mwdb.view', state.view);
-  }));
-
-  ui.more.addEventListener('click', renderChunk);
-
-  ui.lang.addEventListener('change', async () => {
-    state.lang = ui.lang.value;
-    localStorage.setItem('mwdb.lang', state.lang);
-    await loadLang(state.lang);
-    dropHaystack();
-    rebuild();
-  });
-
-  document.addEventListener('keydown', ev => {
-    const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName);
-    if (ev.key === '/' && !typing) { ev.preventDefault(); ui.q.focus(); ui.q.select(); }
-    if ((ev.key === 'k' || ev.key === 'K') && (ev.metaKey || ev.ctrlKey)) { ev.preventDefault(); ui.q.focus(); ui.q.select(); }
-    if (ev.key === 'Escape' && document.activeElement === ui.q) { ui.q.value = ''; state.q = ''; rebuild(); ui.q.blur(); }
-  });
-
-  /* ---------- boot ---------- */
-
-  function showError(msg) {
-    ui.loading.hidden = true;
-    ui.error.hidden = false;
-    ui.error.innerHTML =
-      '<h4>Gagal memuat database</h4><p>' + escapeHtml(msg) + '</p>' +
-      '<p style="margin-top:6px">Pastikan halaman dibuka dari server (bukan file://) sehingga berkas <code>data/index.json</code> bisa diakses.</p>' +
-      '<button class="btn" onclick="location.reload()">Coba lagi</button>';
-  }
-
-  async function boot() {
-    try {
-      await loadIndex();
-    } catch (err) {
-      showError(err.message);
-      return;
-    }
-
-    ui.loading.hidden = true;
-    ui.grid.hidden = false;
-    fillCounts();
-
-    const savedView = localStorage.getItem('mwdb.view');
-    if (savedView === 'list') {
-      state.view = 'list';
-      ui.grid.classList.add('list');
-      document.querySelectorAll('[data-view]').forEach(b => b.classList.toggle('on', b.dataset.view === 'list'));
-    }
-
-    rebuild();
-    loadLang(state.lang).then(() => { dropHaystack(); rebuild(); });
-  }
-
-  boot();
-})();
-</script>
+<script src="i18n.js" defer></script>
+<script src="i18n-more.js" defer></script>
+<script src="app.js" defer></script>
 </body>
 </html>
