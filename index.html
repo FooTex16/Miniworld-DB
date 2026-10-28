@@ -664,8 +664,10 @@
 
   /* elemen bertanda data-req hanya tampil untuk peran yang berhak —
      tamu tidak melihat filter, rentang no urut, pilih-banyak/hapus,
-     ubah no urut, maupun urutkan sub kategori */
-  body.guest [data-req="admin"] { display: none !important; }
+     ubah no urut, maupun urutkan sub kategori.
+     Dipakai bentuk "kecuali admin" supaya saat layar login (body belum
+     punya kelas peran) kontrol admin ikut tersembunyi. */
+  body:not(.admin) [data-req="admin"] { display: none !important; }
   body:not(.guest) [data-req="guest"] { display: none !important; }
   body.guest .card .no { cursor: default; }
   body.guest .card .no:hover { border-color: var(--line-2); color: var(--muted); }

@@ -35,9 +35,10 @@ Sebelum database dibuka, situs meminta **kunci akses** (`auth.js`). Ada dua kunc
 
 Peran diturunkan ulang dari kunci setiap kali halaman dimuat — mengubah variabel
 peran lewat devtools tidak berguna. Untuk tamu, semua kontrol admin disembunyikan
-lewat atribut `data-req="admin"` (CSS `body.guest …`) **dan** fungsi-fungsinya
-dijaga `blokirAdmin()`; tombol **Keluar** di pojok kanan atas menghapus kunci lalu
-memuat ulang halaman.
+lewat atribut `data-req="admin"` (CSS `body:not(.admin) …` — dipilih dari sisi
+positif supaya kontrol admin ikut tersembunyi saat layar login, ketika body belum
+punya kelas peran) **dan** fungsi-fungsinya dijaga `blokirAdmin()`; tombol
+**Keluar** di pojok kanan atas menghapus kunci lalu memuat ulang halaman.
 
 Yang tersimpan di repo hanyalah **hash SHA-256** kedua kunci (`H_GUEST` / `H_ADMIN`
 di `auth.js`), bukan kuncinya. Kunci plaintext ditulis di berkas di **luar** repo

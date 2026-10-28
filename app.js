@@ -65,6 +65,9 @@
   /* Badge peran + tombol keluar; dipanggil setelah kunci dikenali. */
   function terapkanAkses() {
     document.body.classList.toggle('guest', PERAN === 'guest');
+    // kelas admin dipakai CSS: kontrol admin hanya tampil kalau peran sudah
+    // jelas admin. Saat layar login (belum ada kelas) semuanya tetap tersembunyi.
+    document.body.classList.toggle('admin', PERAN === 'admin');
     const badge = ui.roleBadge;
     if (badge) {
       badge.hidden = false;
