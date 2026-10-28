@@ -5,7 +5,7 @@ Bahasa Indonesia / bahasa lain), lihat ikon, dan klik satu entri untuk menyalin 
 
 ## Dua mode, satu berkas
 
-`index.html`, `app.js`, `i18n.js`, dan `i18n-more.js` dipakai bersama oleh dua tempat:
+`index.html`, `app.js`, `auth.js`, `i18n.js`, dan `i18n-more.js` dipakai bersama oleh dua tempat:
 
 | | Alamat | Sumber data | Aksi tulis |
 |---|---|---|---|
@@ -24,13 +24,37 @@ python -m http.server 8080     # dijalankan di root repo
 # lalu buka http://127.0.0.1:8080/
 ```
 
+## Halaman login — kunci tamu & admin
+
+Sebelum database dibuka, situs meminta **kunci akses** (`auth.js`). Ada dua kunci:
+
+| Peran | Boleh |
+|---|---|
+| **Tamu** | menelusuri kategori, mencari, ganti bahasa & tampilan, sembunyikan navigasi, **klik entri = salin ID** |
+| **Admin** | semua fitur tamu **+** filter (ikon/nama/duplikat/unik), rentang no urut, tombol **Game**, pilih-banyak & **HAPUS**, **Ubah no urut**, **Urutkan sub kategori**, **UBAH** nama |
+
+Peran diturunkan ulang dari kunci setiap kali halaman dimuat — mengubah variabel
+peran lewat devtools tidak berguna. Untuk tamu, semua kontrol admin disembunyikan
+lewat atribut `data-req="admin"` (CSS `body.guest …`) **dan** fungsi-fungsinya
+dijaga `blokirAdmin()`; tombol **Keluar** di pojok kanan atas menghapus kunci lalu
+memuat ulang halaman.
+
+Yang tersimpan di repo hanyalah **hash SHA-256** kedua kunci (`H_GUEST` / `H_ADMIN`
+di `auth.js`), bukan kuncinya. Kunci plaintext ditulis di berkas di **luar** repo
+(`..\KUNCI-AKSES.txt`) — bagikan hanya kunci tamu.
+
+> Situs ini statis: pembatasan ini mengatur **tampilan & aksi di UI**. Data `data/db.json`
+> tetap bisa dibaca siapa pun yang membuka URL-nya langsung, jadi jangan pernah simpan
+> rahasia di sana. Bila kunci admin bocor, ganti kedua kunci + kedua hash lalu push.
+
 ## Isi repo
 
 ```
 index.html            # markup + CSS — dipakai LIVE & LOCAL
-app.js                # logika UI, saringan, mode urut, i18n, deteksi mode
-i18n.js               # kamus en + id (161 kunci)
-i18n-more.js          # kamus zh, es, pt, fr, ja, ru (161 kunci per bahasa)
+app.js                # logika UI, saringan, mode urut, i18n, deteksi mode, peran akses
+auth.js               # gerbang login: hash SHA-256 kunci tamu + admin
+i18n.js               # kamus en + id (171 kunci)
+i18n-more.js          # kamus zh, es, pt, fr, ja, ru (171 kunci per bahasa)
 
 data/db.json          # payload {meta, entries}: 1.678 entri, hasil ekspor DATA\
 data/index.json       # format situs (id, nama EN/中文, grup, path ikon) — sumber
@@ -165,13 +189,13 @@ berurutan lalu **Terapkan no urut**), dan **Game** untuk urut persis seperti di 
 ```
 tools/local-db/server.py       # server HTTP + endpoint di atas
 tools/local-db/export_live.py  # ekspor DATA\ -> data/ untuk situs LIVE
-tools/local-db/check_i18n.js   # validasi 8 x 161 kunci i18n
+tools/local-db/check_i18n.js   # validasi 8 x 171 kunci i18n
 tools/local-db/start.bat       # jalankan server + buka browser
 tools/local-db/README.md       # dokumentasi lengkap versi localhost
-index.html, app.js, i18n*.js   # UI — ada di root repo, dipakai LIVE & LOCAL
+index.html, app.js, auth.js, i18n*.js   # UI — ada di root repo, dipakai LIVE & LOCAL
 ```
 
-Seluruh kamus i18n (8 bahasa × 161 kunci) wajib identik jumlah, urutan, placeholder,
+Seluruh kamus i18n (8 bahasa × 171 kunci) wajib identik jumlah, urutan, placeholder,
 dan urutan tag HTML-nya — divalidasi oleh:
 
 ```bash

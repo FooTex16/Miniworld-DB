@@ -44,6 +44,37 @@
     return true;
   }
 
+  /* ---------- peran akses: tamu vs admin ----------
+
+     Peran diturunkan dari kunci yang dimasukkan di halaman login (lihat
+     auth.js). Tamu hanya bisa menelusuri + menyalin ID: filter, rentang no
+     urut, pilih-banyak/hapus, ubah no urut, urutkan sub kategori, dan ubah
+     nama disembunyikan lewat CSS (data-req="admin") sekaligus dijaga
+     fungsi-fungsinya. */
+  let PERAN = null;                     // 'admin' | 'guest' — null = belum login
+
+  function admin() { return PERAN === 'admin'; }
+
+  /* True bila peran TIDAK berhak memakai fitur admin: tampilkan pesan. */
+  function blokirAdmin() {
+    if (admin()) return false;
+    toastMsg(t('login.readonly'));
+    return true;
+  }
+
+  /* Badge peran + tombol keluar; dipanggil setelah kunci dikenali. */
+  function terapkanAkses() {
+    document.body.classList.toggle('guest', PERAN === 'guest');
+    const badge = ui.roleBadge;
+    if (badge) {
+      badge.hidden = false;
+      badge.textContent = t(PERAN === 'admin' ? 'login.role.admin' : 'login.role.guest');
+      badge.classList.toggle('admin', PERAN === 'admin');
+      badge.classList.toggle('guest', PERAN === 'guest');
+    }
+    if (ui.logoutBtn) ui.logoutBtn.hidden = false;
+  }
+
   // warna titik kategori — palet yang sama dengan situs, dipakai bergiliran
   const CAT_COLORS = ['#d9a441', '#58a6d8', '#77c178', '#b48ae0', '#e07a5f', '#6fc3b0', '#d06a8c'];
 
@@ -62,6 +93,7 @@
     navToggle: $('navToggle'), catBar: $('catBar'), catSortOn: $('catSortOn'),
     catMode: $('catMode'), catApply: $('catApply'), catReset: $('catReset'),
     catExit: $('catExit'),
+    roleBadge: $('roleBadge'), logoutBtn: $('logoutBtn'),
     layout: document.querySelector('.layout'),
   };
 
@@ -130,6 +162,10 @@
     });
     if (ui.navToggle) {
       ui.navToggle.textContent = state.nav ? t('nav.hide') : t('nav.show');
+    }
+    if (PERAN) {                       // badge peran ikut berganti bahasa
+      ui.roleBadge.textContent = t(PERAN === 'admin' ? 'login.role.admin' : 'login.role.guest');
+      ui.logoutBtn.textContent = t('login.out');
     }
     if (state.meta) { renderCats(); rebuild(); }
   }
@@ -578,6 +614,7 @@
     const pick = document.createElement('input');
     pick.type = 'checkbox';
     pick.className = 'pick';
+    pick.setAttribute('data-req', 'admin');   // tamu tidak bisa pilih-banyak
     pick.checked = on;
     pick.setAttribute('aria-label', t('card.pick') + ' #' + e.i);
     pick.addEventListener('click', ev => ev.stopPropagation());
@@ -643,6 +680,7 @@
     const ed = document.createElement('button');
     ed.type = 'button';
     ed.className = 'ed';
+    ed.setAttribute('data-req', 'admin');     // ubah nama khusus admin
     ed.textContent = t('card.edit');
     ed.title = fill(t('card.editTip'), { id: e.i });
     ed.setAttribute('aria-label', fill(t('card.editTip'), { id: e.i }));
@@ -677,7 +715,7 @@
         updatePickUI();
         return;
       }
-      if (ev.target.closest('.no')) {     // klik chip No. = ubah nomor ini
+      if (ev.target.closest('.no') && admin()) {   // klik chip No. = ubah nomor (admin)
         startEditNo(card, e);
         return;
       }
@@ -686,7 +724,7 @@
     card.addEventListener('keydown', ev => {
       if (ev.target !== card) return;
       if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); copyId(e.i, card); }
-      if (ev.key === 'x' || ev.key === 'X') {
+      if ((ev.key === 'x' || ev.key === 'X') && admin()) {
         pick.checked = !pick.checked;
         if (pick.checked) state.sel.add(e._key); else state.sel.delete(e._key);
         updateSelUI();
@@ -729,7 +767,7 @@
 
   async function deleteSelected() {
     const keys = [...state.sel];
-    if (!keys.length || blokirTulis()) return;
+    if (!keys.length || blokirAdmin() || blokirTulis()) return;
 
     const items = keys.map(k => { const p = keyParts(k); return { cat: p.cat, i: p.i }; });
     const nDup = keys.filter(k => { const e = state.byKey.get(k); return e && e._dup; }).length;
@@ -840,7 +878,7 @@
   let sedangEdit = false;
 
   function startEditNo(card, e) {
-    if (sedangEdit || state.modeNo || blokirTulis()) return;
+    if (sedangEdit || state.modeNo || blokirAdmin() || blokirTulis()) return;
     const chip = card.querySelector('.no');
     if (!chip) return;
     sedangEdit = true;
@@ -889,7 +927,7 @@
   let edEntry = null;                   // entri yang sedang dibuka di modal
 
   function bukaEditNama(e) {
-    if (state.modeNo || sedangEdit) return;
+    if (state.modeNo || sedangEdit || blokirAdmin()) return;
     edEntry = e;
     ui.edErr.hidden = true;
     ui.edErr.textContent = '';
@@ -914,8 +952,11 @@
   async function simpanEditNama() {
     const e = edEntry;
     if (!e || ui.edSave.disabled) return;
-    if (LIVE) {                       // mode LIVE: tampilkan pesan di modal
-      ui.edErr.textContent = t('ro.msg');
+    // tamu tidak berhak mengubah nama; LIVE juga baca-saja — pesannya
+    // tampil di dalam modal supaya jelas
+    const alasan = !admin() ? t('login.readonly') : (LIVE ? t('ro.msg') : null);
+    if (alasan) {
+      ui.edErr.textContent = alasan;
       ui.edErr.hidden = false;
       return;
     }
@@ -989,7 +1030,7 @@
   }
 
   function setMode(on) {
-    if (on && blokirTulis()) return;
+    if (on && (blokirAdmin() || blokirTulis())) return;
     state.modeNo = on;
     if (!on) state.picks = [];
     ui.modeNo.hidden = on;
@@ -1050,7 +1091,7 @@
   }
 
   function masukModeCat() {
-    if (blokirTulis()) return;
+    if (blokirAdmin() || blokirTulis()) return;
     const induk = indukAktif();
     if (!induk) { toastMsg(t('cat.needBranch')); return; }
     state.modeCat = true;
@@ -1077,6 +1118,7 @@
   }
 
   async function simpanUrutSub() {
+    if (blokirAdmin() || blokirTulis()) return;
     const induk = indukAktif();
     const order = state.catPicks.slice();
     if (!induk || !order.length) return;
@@ -1095,6 +1137,7 @@
   }
 
   async function resetUrutSub() {
+    if (blokirAdmin() || blokirTulis()) return;
     const induk = indukAktif();
     if (!induk) return;
     if (!window.confirm(fill(t('cat.resetConfirm'), { branch: catNama(induk) }))) return;
@@ -1187,7 +1230,7 @@
 
   ui.noOrderReset.addEventListener('click', async () => {
     const cat = state.cat;
-    if (cat === 'all' || cat.indexOf('/') < 0 || blokirTulis()) return;
+    if (cat === 'all' || cat.indexOf('/') < 0 || blokirAdmin() || blokirTulis()) return;
     if (!window.confirm(fill(t('no.resetConfirm'), { cat: judulCat() }))) return;
     try {
       await kirimUrut({ cat: cat, reset: true });
@@ -1308,6 +1351,15 @@
   async function boot() {
     terapkanMode();                    // badge & kunci footer sesuai tebakan mode
     applyLang();                       // teks statis -> bahasa yang dipilih
+    if (!window.MWDB_AUTH || typeof window.MWDB_AUTH.tentukan !== 'function') {
+      showError('auth.js');            // gerbang gagal dimuat — jangan buka data
+      return;
+    }
+    try {
+      PERAN = await window.MWDB_AUTH.tentukan();   // tunggu kunci tamu/admin
+    } catch (_) { return; }
+    if (!PERAN) return;
+    terapkanAkses();                   // sembunyikan fitur admin bila tamu
     try {
       await loadIndex();               // bisa mengoreksi mode LIVE/LOCAL
     } catch (err) {
@@ -1328,6 +1380,8 @@
     updateSelUI();
     loadLang(state.lang).then(() => { dropHaystack(); rebuild(); });
   }
+
+  if (ui.logoutBtn) ui.logoutBtn.addEventListener('click', () => window.MWDB_AUTH.keluar());
 
   boot();
 })();

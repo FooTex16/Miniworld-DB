@@ -1,4 +1,4 @@
 # Tidak dibutuhkan situs statis — hanya untuk pengembangan lokal.
-# Yang dipakai index.html cuma: app.js, i18n.js, i18n-more.js, data/**
+# Yang dipakai index.html cuma: app.js, auth.js, i18n.js, i18n-more.js, data/**
 data_old/
 tools/

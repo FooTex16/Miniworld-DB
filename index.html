@@ -610,12 +610,71 @@
     .grid.icon { grid-template-columns: repeat(auto-fill, minmax(62px, 1fr)); }
     .grid.icon .thumb { width: 46px; height: 46px; }
   }
+
+  /* ---------- akses: halaman login & pembatasan peran ---------- */
+  .loginwrap {
+    position: fixed; inset: 0; z-index: 100;
+    background: var(--bg);
+    display: flex; align-items: center; justify-content: center;
+    padding: 20px;
+  }
+  .loginwrap[hidden] { display: none; }
+  .loginbox {
+    width: min(392px, 100%);
+    background: var(--panel); border: 1px solid var(--line-2);
+    border-radius: 7px; padding: 18px;
+    box-shadow: 0 14px 44px rgba(0,0,0,.55);
+  }
+  .loginbox .brand { margin-bottom: 16px; }
+  .loginbox h4 {
+    margin: 0 0 6px; font-size: 13px; letter-spacing: .07em;
+    text-transform: uppercase; color: var(--text);
+  }
+  .loginhint {
+    margin: 0 0 13px; font-size: 12.5px; line-height: 1.6; color: var(--dim);
+  }
+  .loginbox input[type=text] {
+    display: block; width: 100%;
+    height: 36px; padding: 0 11px;
+    background: var(--panel-2); border: 1px solid var(--line-2);
+    border-radius: 4px; color: var(--text);
+    font-family: var(--mono); font-size: 15px; letter-spacing: .1em;
+    text-align: center; outline: none; text-transform: uppercase;
+    transition: border-color .1s, background .1s;
+  }
+  .loginbox input[type=text]::placeholder { letter-spacing: .04em; }
+  .loginbox input[type=text]:focus { border-color: var(--accent); background: var(--panel-3); }
+  .loginbox .ederr { margin-top: 9px; }
+  .loginbox .edact { margin-top: 14px; }
+  .loginbox .edact .go { width: 100%; padding: 8px 16px; }
+
+  /* badge peran + tombol keluar di topbar */
+  .brand .role {
+    color: var(--muted); letter-spacing: .1em;
+  }
+  .brand .role.admin {
+    color: var(--accent); border-color: rgba(232,163,61,.45);
+    background: rgba(232,163,61,.1);
+  }
+  .brand .role.guest {
+    color: #58a6d8; border-color: rgba(88,166,216,.45);
+    background: rgba(88,166,216,.1);
+  }
+  #logoutBtn { white-space: nowrap; }
+
+  /* elemen bertanda data-req hanya tampil untuk peran yang berhak —
+     tamu tidak melihat filter, rentang no urut, pilih-banyak/hapus,
+     ubah no urut, maupun urutkan sub kategori */
+  body.guest [data-req="admin"] { display: none !important; }
+  body:not(.guest) [data-req="guest"] { display: none !important; }
+  body.guest .card .no { cursor: default; }
+  body.guest .card .no:hover { border-color: var(--line-2); color: var(--muted); }
 </style>
 </head>
 <body>
 
 <header class="topbar">
-  <div class="brand"><b>MiniWorld</b><span>ID DB</span><span class="mode">LOCAL</span></div>
+  <div class="brand"><b>MiniWorld</b><span>ID DB</span><span class="mode">LOCAL</span><span class="role" id="roleBadge" hidden>—</span></div>
 
   <div class="search">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
@@ -639,6 +698,8 @@
       <option value="ja">日本語</option>
       <option value="ru">Русский</option>
     </select>
+    <button class="btn-ghost" type="button" id="logoutBtn" hidden
+            data-i18n="login.out">Keluar</button>
     <a class="icon-btn" href="https://github.com/FooTex16/Miniworld-DB" title="Repo GitHub" aria-label="GitHub">
       <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
         <path d="M12 .5A11.5 11.5 0 0 0 .5 12a11.5 11.5 0 0 0 7.86 10.92c.58.11.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.53-1.34-1.29-1.7-1.29-1.7-1.05-.72.08-.7.08-.7 1.16.08 1.77 1.2 1.77 1.2 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.7 0-1.26.45-2.29 1.19-3.1-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.18 1.18a11 11 0 0 1 5.8 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.12 3.05.74.81 1.18 1.84 1.18 3.1 0 4.43-2.69 5.4-5.25 5.69.41.36.78 1.06.78 2.14v3.17c0 .31.21.68.8.56A11.5 11.5 0 0 0 23.5 12 11.5 11.5 0 0 0 12 .5z"/>
@@ -653,7 +714,7 @@
     <ul class="cats" id="cats">
       <li data-cat="all" class="on"><span class="dot" style="background:var(--muted)"></span>Semua<span class="n" data-n="all">—</span></li>
     </ul>
-    <div class="catbar" id="catBar">
+    <div class="catbar" id="catBar" data-req="admin">
       <button class="btn-ghost" type="button" id="catSortOn" hidden
               data-i18n="cat.sortBtn">Urutkan sub kategori</button>
       <span class="mode-wrap" id="catMode" hidden>
@@ -667,25 +728,26 @@
       </span>
     </div>
 
-    <h3 data-i18n="side.filter">Filter</h3>
-    <label class="opt"><input type="checkbox" id="onlyIcon"> <span data-i18n="filter.icon">Hanya yang ada ikonnya</span></label>
-    <label class="opt"><input type="checkbox" id="onlyName"> <span data-i18n="filter.name">Hanya yang punya nama</span></label>
-    <label class="opt"><input type="checkbox" id="onlyDup"> <span data-i18n="filter.dup">Hanya yang duplikat</span></label>
-    <label class="opt"><input type="checkbox" id="onlyUniq"> <span data-i18n="filter.uniq">Hanya yang unik</span></label>
+    <h3 data-i18n="side.filter" data-req="admin">Filter</h3>
+    <label class="opt" data-req="admin"><input type="checkbox" id="onlyIcon"> <span data-i18n="filter.icon">Hanya yang ada ikonnya</span></label>
+    <label class="opt" data-req="admin"><input type="checkbox" id="onlyName"> <span data-i18n="filter.name">Hanya yang punya nama</span></label>
+    <label class="opt" data-req="admin"><input type="checkbox" id="onlyDup"> <span data-i18n="filter.dup">Hanya yang duplikat</span></label>
+    <label class="opt" data-req="admin"><input type="checkbox" id="onlyUniq"> <span data-i18n="filter.uniq">Hanya yang unik</span></label>
 
-    <h3 data-i18n="side.no">No urut</h3>
-    <div class="range">
+    <h3 data-i18n="side.no" data-req="admin">No urut</h3>
+    <div class="range" data-req="admin">
       <label><span data-i18n="range.from">dari</span> <input type="number" id="noFrom" min="1" value="1" inputmode="numeric" aria-label="No urut dari" data-i18n-aria="range.ariaFrom"></label>
       <label><span data-i18n="range.to">s/d</span> <input type="number" id="noTo" min="1" placeholder="habis" inputmode="numeric" aria-label="No urut sampai" data-i18n-aria="range.ariaTo"></label>
       <button class="btn-ghost" type="button" id="noReset" data-i18n="common.all">Semua</button>
     </div>
-    <p class="rng-hint" id="noHint">No. 1 – habis · urut seperti di game</p>
+    <p class="rng-hint" id="noHint" data-req="admin">No. 1 – habis · urut seperti di game</p>
 
     <div class="note">
-      <p data-i18n-html="note.1"><b>Cara pakai:</b> klik satu entri untuk menyalin ID-nya. Centang banyak entri sekaligus untuk melihat berapa yang <b>duplikat</b> dan berapa yang <b>unik</b>, lalu tekan <b style="color:#f08a72">HAPUS</b> untuk membuangnya. Tekan <b>/</b> untuk fokus ke pencarian, <b>Del</b> untuk hapus pilihan.</p>
-      <p data-i18n-html="note.2"><b>No urut</b> = posisi block di dalam kategori, mengikuti urutan aslinya di game. Isi <i>dari</i> / <i>s/d</i> untuk mengambil rentang (mis. 1–40), kosongkan <i>s/d</i> untuk sampai habis. Tombol <b>Game</b> mengatur tampilan persis seperti urutan di game.</p>
-      <p data-i18n-html="note.3"><b>Ubah no urut:</b> klik chip <b>No.N</b> pada kartu untuk mengganti nomor satu block saja (angka milik block lain akan bertukar dengannya). Atau tekan <b>Ubah no urut</b>, lalu klik kartu berurutan — yang pertama jadi No.1, kedua No.2, dst. — dan tekan <b>Terapkan no urut</b>. <b>Urutan asli</b> mengembalikan seperti hasil scan.</p>
-      <p data-i18n-html="note.4"><b>Ubah nama:</b> tekan tombol <b>UBAH</b> di kartu (muncul saat kursor di atas kartu), isi nama <b>English</b> dan/atau <b>中文</b>, lalu <b>Simpan</b> (<kbd>Enter</kbd> simpan, <kbd>Esc</kbd> batal). Hasilnya ditulis ke <code>data_id\entries.json</code> kategori tsb dan ikut disinkronkan ke data situs untuk translate berikutnya; id, label grup, dan OCR tetap tidak bisa diedit.</p>
+      <p data-i18n-html="note.guest" data-req="guest"><b>Akses tamu:</b> Anda bisa menelusuri, mencari, ganti bahasa dan tampilan, lalu klik entri untuk menyalin ID-nya. Filter, rentang no urut, urut sub kategori, hapus, ubah no urut, dan ubah nama hanya untuk admin.</p>
+      <p data-i18n-html="note.1" data-req="admin"><b>Cara pakai:</b> klik satu entri untuk menyalin ID-nya. Centang banyak entri sekaligus untuk melihat berapa yang <b>duplikat</b> dan berapa yang <b>unik</b>, lalu tekan <b style="color:#f08a72">HAPUS</b> untuk membuangnya. Tekan <b>/</b> untuk fokus ke pencarian, <b>Del</b> untuk hapus pilihan.</p>
+      <p data-i18n-html="note.2" data-req="admin"><b>No urut</b> = posisi block di dalam kategori, mengikuti urutan aslinya di game. Isi <i>dari</i> / <i>s/d</i> untuk mengambil rentang (mis. 1–40), kosongkan <i>s/d</i> untuk sampai habis. Tombol <b>Game</b> mengatur tampilan persis seperti urutan di game.</p>
+      <p data-i18n-html="note.3" data-req="admin"><b>Ubah no urut:</b> klik chip <b>No.N</b> pada kartu untuk mengganti nomor satu block saja (angka milik block lain akan bertukar dengannya). Atau tekan <b>Ubah no urut</b>, lalu klik kartu berurutan — yang pertama jadi No.1, kedua No.2, dst. — dan tekan <b>Terapkan no urut</b>. <b>Urutan asli</b> mengembalikan seperti hasil scan.</p>
+      <p data-i18n-html="note.4" data-req="admin"><b>Ubah nama:</b> tekan tombol <b>UBAH</b> di kartu (muncul saat kursor di atas kartu), isi nama <b>English</b> dan/atau <b>中文</b>, lalu <b>Simpan</b> (<kbd>Enter</kbd> simpan, <kbd>Esc</kbd> batal). Hasilnya ditulis ke <code>data_id\entries.json</code> kategori tsb dan ikut disinkronkan ke data situs untuk translate berikutnya; id, label grup, dan OCR tetap tidak bisa diedit.</p>
       <p data-i18n-html="note.5"><b>Sumber data:</b> <code>DATA\&lt;indu&gt;\&lt;kategori&gt;</code> — kategori mengikuti nama folder. Sub kategori hanya muncul di navigasi setelah induknya dipilih, dan urutannya bisa disusun lewat tombol <b>Urutkan sub kategori</b>.</p>
     </div>
   </aside>
@@ -698,7 +760,7 @@
       <div class="seg" role="group" aria-label="Urutan" data-i18n-aria="seg.sort">
         <button data-sort="id" class="on">ID</button>
         <button data-sort="name" data-i18n="sort.name">Nama</button>
-        <button data-sort="game" data-i18n="sort.game" title="Urutkan persis seperti urutan block di game" data-i18n-title="sort.gameTip">Game</button>
+        <button data-sort="game" data-req="admin" data-i18n="sort.game" title="Urutkan persis seperti urutan block di game" data-i18n-title="sort.gameTip">Game</button>
       </div>
       <div class="seg" role="group" aria-label="Tampilan" data-i18n-aria="seg.view">
         <button data-view="grid" class="on" data-i18n="view.grid">Kartu</button>
@@ -709,7 +771,7 @@
               data-i18n="nav.hide">Sembunyikan navigasi</button>
     </div>
 
-    <div class="selrow">
+    <div class="selrow" data-req="admin">
       <label class="opt"><input type="checkbox" id="selAll"> <span data-i18n="sel.all">Pilih semua hasil</span></label>
       <span class="stat-line" id="selStat"><b>0</b> dipilih</span>
       <button class="btn-ghost" id="selClear" disabled data-i18n="sel.clear">Bersihkan</button>
@@ -748,6 +810,22 @@
   </p>
 </footer>
 
+<div id="loginwrap" class="loginwrap" hidden>
+  <div class="loginbox" role="dialog" aria-modal="true" aria-labelledby="loginTitle">
+    <div class="brand"><b>MiniWorld</b><span>ID DB</span></div>
+    <h4 id="loginTitle" data-i18n="login.title">Masukkan kunci akses</h4>
+    <p class="loginhint" data-i18n="login.hint">Kunci tamu hanya untuk menelusuri dan menyalin ID. Kunci admin juga membuka filter, no urut, urut sub kategori, hapus, dan ubah nama.</p>
+    <input type="text" id="loginKey" maxlength="40" spellcheck="false"
+           autocomplete="off" autocapitalize="characters" autocorrect="off"
+           placeholder="Kunci akses" data-i18n-ph="login.ph"
+           aria-label="Kunci akses" data-i18n-aria="login.ph">
+    <p class="ederr" id="loginErr" hidden></p>
+    <div class="edact">
+      <button class="go" type="button" id="loginBtn" data-i18n="login.btn">Masuk</button>
+    </div>
+  </div>
+</div>
+
 <div id="edwrap" class="edwrap" hidden>
   <div class="edbox" role="dialog" aria-modal="true" aria-labelledby="edTitle">
     <h4 id="edTitle" data-i18n="ed.title">Ubah nama block</h4>
@@ -772,6 +850,7 @@
 
 <script src="i18n.js" defer></script>
 <script src="i18n-more.js" defer></script>
+<script src="auth.js" defer></script>
 <script src="app.js" defer></script>
 </body>
 </html>

@@ -198,7 +198,7 @@ git add -A && git commit -m "Perbarui data LIVE" && git push
 ```
 server.py        # server HTTP + endpoint di atas (APP = root repo)
 export_live.py   # ekspor DATA\ -> data/ untuk situs LIVE
-check_i18n.js    # validasi 8 x 161 kunci i18n (kamus di root repo)
+check_i18n.js    # validasi 8 x 171 kunci i18n (kamus di root repo)
 start.bat        # jalankan server + buka browser
 README.md        # berkas ini
 ```

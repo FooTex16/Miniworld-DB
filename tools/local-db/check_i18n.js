@@ -22,7 +22,7 @@ const en = Object.keys(D.en || {});
 let bad = 0;
 const fail = m => { console.log('  GAGAL ' + m); bad++; };
 
-if (en.length !== 161) fail(`jumlah kunci en = ${en.length}, diharapkan 161`);
+if (en.length !== 171) fail(`jumlah kunci en = ${en.length}, diharapkan 171`);
 
 for (const L of LOKAL) {
   if (!D[L]) { fail(`${L} tidak ada`); continue; }
