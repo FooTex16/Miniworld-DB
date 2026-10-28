@@ -97,6 +97,23 @@
     layout: document.querySelector('.layout'),
   };
 
+  /* Bahasa bawaan mengikuti bahasa peramban user: kalau defaultnya salah satu
+     dari pilihan yang tersedia (en, id, zh, es, pt, fr, ja, ru) langsung
+     dipakai — mis. pengguna Tionghoa dapat 中文 otomatis. Kalau di luar
+     pilihan (de, ar, ko, …) jatuh ke English. Pilihan yang sudah disimpan
+     user di localStorage selalu menang. */
+  const BAHASA = ['en', 'id', 'zh', 'es', 'pt', 'fr', 'ja', 'ru'];
+
+  function bahasaPeramban() {
+    let raw = '';
+    try {
+      raw = (navigator.languages && navigator.languages[0]) || navigator.language || '';
+    } catch (_) { raw = ''; }
+    const p = String(raw).toLowerCase().split(/[-_]/)[0];
+    const k = p === 'in' ? 'id' : p;        // 'in' = kode lama untuk Indonesia
+    return BAHASA.indexOf(k) >= 0 ? k : 'en';
+  }
+
   const state = {
     entries: [],
     meta: null,
@@ -116,7 +133,7 @@
     onlyName: false,
     onlyDup: false,
     onlyUniq: false,
-    lang: localStorage.getItem('mwdb.lang') || 'en',
+    lang: localStorage.getItem('mwdb.lang') || bahasaPeramban(),
     translations: {},        // kode -> array nama selaras urutan entries
     filtered: [],
     shown: 0,
@@ -160,6 +177,7 @@
     document.querySelectorAll('[data-i18n-title]').forEach(el => {
       el.title = tr(el.dataset.i18nTitle, el.title);
     });
+    if (ui.lang && ui.lang.value !== state.lang) ui.lang.value = state.lang;
     if (ui.navToggle) {
       ui.navToggle.textContent = state.nav ? t('nav.hide') : t('nav.show');
     }

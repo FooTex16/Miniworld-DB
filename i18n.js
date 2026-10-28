@@ -204,7 +204,7 @@ window.MWDB_I18N = {
     "login.out": "Log out",
     "login.role.guest": "Guest",
     "login.role.admin": "Admin",
-    "login.readonly": "Guest mode ? only browsing and copying IDs are allowed.",
+    "login.readonly": "Guest mode — only browsing and copying IDs are allowed.",
     "note.guest": "<b>Guest access:</b> you can browse, search, switch language and view, and click an entry to copy its ID. Filters, order ranges, sorting sub categories, deleting, renumbering and renaming are reserved for the admin.",
   },
 
@@ -401,7 +401,7 @@ window.MWDB_I18N = {
     "login.out": "Keluar",
     "login.role.guest": "Tamu",
     "login.role.admin": "Admin",
-    "login.readonly": "Mode tamu ? hanya boleh menelusuri dan menyalin ID.",
+    "login.readonly": "Mode tamu — hanya boleh menelusuri dan menyalin ID.",
     "note.guest": "<b>Akses tamu:</b> Anda bisa menelusuri, mencari, ganti bahasa dan tampilan, lalu klik entri untuk menyalin ID-nya. Filter, rentang no urut, urut sub kategori, hapus, ubah no urut, dan ubah nama hanya untuk admin.",
   },
 };

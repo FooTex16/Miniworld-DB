@@ -37,15 +37,32 @@ for (const L of LOKAL) {
   const cjk = ['en', 'es', 'pt', 'fr', 'ru'].includes(L)
     ? k.filter(x => /[\u3040-\u30ff\u4e00-\u9fff]/.test(String(D[L][x]).replace(/中文/g, '')))
     : [];
+  // teks rusak: karakter non-ASCII terganti '?' saat file ditulis (sejarahnya
+  // lewat PowerShell yang meng-encode non-ASCII jadi tanda tanya).
+  // '?' menempel huruf (tambi?n), beruntun (??????), atau terpisah spasi lalu
+  // huruf (Mode tamu ? hanya...) tidak pernah sah. Tanda '?' yang sah selalu
+  // diikuti akhir kalimat: kutip, newline, atau akhir string.
+  const rusakQ = k.filter(x => /\?[\?0-9a-z]|\s\?\s[^\n]/i.test(String(D[L][x])));
+  const pergantian = k.filter(x => String(D[L][x]).includes('\uFFFD'));
+  const nonAscii = k.filter(x => /[\u0080-\uffff]/.test(String(D[L][x])));
+  const rasio = k.length ? (nonAscii.length / k.length) : 0;
+  // zh/ja/ru wajib mayoritas non-Latin; hampir nol berarti aksaranya hilang semua.
+  const wajibNonAscii = ['zh', 'ja', 'ru'].includes(L);
 
   console.log(`[${L}] kunci=${k.length} hilang=${hilang.length} tambahan=${lebih.length} ` +
-    `kosong=${kosong.length} placeholder=${bedaPh.length} tagHTML=${bedaTag.length} cjk=${cjk.length}`);
+    `kosong=${kosong.length} placeholder=${bedaPh.length} tagHTML=${bedaTag.length} cjk=${cjk.length} ` +
+    `rusakTandaTanya=${rusakQ.length} pergantian=${pergantian.length} nonLatin=${Math.round(rasio * 100)}%`);
   if (hilang.length) fail(`${L} hilang: ${hilang.join(', ')}`);
   if (lebih.length) fail(`${L} tambahan: ${lebih.join(', ')}`);
   if (kosong.length) fail(`${L} kosong: ${kosong.join(', ')}`);
   if (bedaPh.length) fail(`${L} placeholder beda: ${bedaPh.join(', ')}`);
   if (bedaTag.length) fail(`${L} tag HTML beda: ${bedaTag.join(', ')}`);
   if (cjk.length) fail(`${L} ada aksara CJK: ${cjk.join(', ')}`);
+  if (rusakQ.length) fail(`${L} teks rusak ('?' menempel huruf/ganda): ${rusakQ.join(', ')}`);
+  if (pergantian.length) fail(`${L} ada karakter pergantian U+FFFD: ${pergantian.join(', ')}`);
+  if (wajibNonAscii && rasio < 0.2) {
+    fail(`${L} hanya ${Math.round(rasio * 100)}% nilai non-Latin (aksara hilang semua?)`);
+  }
 }
 
 console.log(bad ? `\nADA ${bad} MASALAH` : `\nSEMUA BAHASA LULUS (${LOKAL.length} x ${en.length} kunci)`);

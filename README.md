@@ -30,8 +30,8 @@ Sebelum database dibuka, situs meminta **kunci akses** (`auth.js`). Ada dua kunc
 
 | Peran | Boleh |
 |---|---|
-| **Tamu** | menelusuri kategori, mencari, ganti bahasa & tampilan, sembunyikan navigasi, **klik entri = salin ID** |
-| **Admin** | semua fitur tamu **+** filter (ikon/nama/duplikat/unik), rentang no urut, tombol **Game**, pilih-banyak & **HAPUS**, **Ubah no urut**, **Urutkan sub kategori**, **UBAH** nama |
+| **Tamu** | menelusuri kategori, mencari, urut **ID / Nama / Game**, ganti bahasa & tampilan, sembunyikan navigasi, **klik entri = salin ID** |
+| **Admin** | semua fitur tamu **+** filter (ikon/nama/duplikat/unik), rentang no urut, pilih-banyak & **HAPUS**, **Ubah no urut**, **Urutkan sub kategori**, **UBAH** nama |
 
 Peran diturunkan ulang dari kunci setiap kali halaman dimuat — mengubah variabel
 peran lewat devtools tidak berguna. Untuk tamu, semua kontrol admin disembunyikan
@@ -121,6 +121,12 @@ node tools/translate.mjs         # -> data_old/lang/*.json
 English, 中文, Bahasa Indonesia, Español, Português, Français, 日本語, Русский
 (pilihan bahasa ada di pojok kanan atas; pilihan tersimpan di `localStorage`).
 
+**Bahasa otomatis mengikuti bahasa peramban** saat pertama dibuka: `navigator.languages[0]`
+dicocokkan ke daftar di atas (subtag utama saja — `zh-CN`/`zh-TW` → `zh`, `pt-BR` → `pt`,
+`in` → `id`). Kalau bahasa default di luar pilihan (`de`, `ar`, `ko`, …) atau peramban tidak
+memberi tahu apa pun, halaman dibuka dalam **English**. Pilihan yang sudah dipilih user
+selalu menang atas deteksi otomatis.
+
 Seluruh UI diterjemahkan — tombol, judul, saran pencarian, catatan, modal, toast, label
 kategori dan grup — dan setiap bahasa murni (tidak ada campur 中文/lainnya kecuali istilah
 yang memang harus tetap asli, mis. `English`, `中文`, nama path, kode berkas).
@@ -189,7 +195,7 @@ berurutan lalu **Terapkan no urut**), dan **Game** untuk urut persis seperti di 
 ```
 tools/local-db/server.py       # server HTTP + endpoint di atas
 tools/local-db/export_live.py  # ekspor DATA\ -> data/ untuk situs LIVE
-tools/local-db/check_i18n.js   # validasi 8 x 171 kunci i18n
+tools/local-db/check_i18n.js   # validasi 8 x 171 kunci i18n + kemurnian teks
 tools/local-db/start.bat       # jalankan server + buka browser
 tools/local-db/README.md       # dokumentasi lengkap versi localhost
 index.html, app.js, auth.js, i18n*.js   # UI — ada di root repo, dipakai LIVE & LOCAL
@@ -201,3 +207,9 @@ dan urutan tag HTML-nya — divalidasi oleh:
 ```bash
 node tools/local-db/check_i18n.js
 ```
+
+Validator juga memeriksa **kemurnian teks**: nilai yang berisi karakter pergantian
+`U+FFFD`, atau `?` yang menempel huruf / beruntun / diapit spasi lalu huruf
+(`tambi?n`, `??????`, `Mode tamu ? hanya`) dianggap rusak. Aturan ini pernah
+menangkap 46 nilai terjemahan yang aksaranya hilang karena skrip sisip lama
+menulis file lewat PowerShell (non-ASCII ter-encode jadi `?`).

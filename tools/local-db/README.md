@@ -198,7 +198,7 @@ git add -A && git commit -m "Perbarui data LIVE" && git push
 ```
 server.py        # server HTTP + endpoint di atas (APP = root repo)
 export_live.py   # ekspor DATA\ -> data/ untuk situs LIVE
-check_i18n.js    # validasi 8 x 171 kunci i18n (kamus di root repo)
+check_i18n.js    # validasi 8 x 171 kunci i18n + kemurnian teks (kamus di root repo)
 start.bat        # jalankan server + buka browser
 README.md        # berkas ini
 ```
@@ -206,6 +206,11 @@ README.md        # berkas ini
 ## Catatan teknis
 
 * Murni Python 3 stdlib — tidak perlu `pip install`.
+* **Jangan menulis `i18n.js` / `i18n-more.js` lewat PowerShell** (mis. here-string
+  atau `Set-Content`): karakter non-ASCII ter-encode jadi `?` dan teks terjemahan
+  hilang aksaranya. Tulis lewat skrip Python `encoding="utf-8"` atau editor yang
+  menjamin UTF-8, lalu jalankan `node tools/local-db/check_i18n.js` — validator
+  itu menandai `?` yang menempel huruf / beruntun sebagai teks rusak.
 * Menulis atomik (`*.tmp` + `os.replace`) supaya `entries.json` tidak korup
   bila proses gagal di tengah.
 * Nama kategori divalidasi terhadap daftar folder asli (tolak path traversal).
