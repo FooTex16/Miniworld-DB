@@ -1,0 +1,8 @@
+{
+  "name": "miniworld-db",
+  "private": true,
+  "description": "Situs database ID block & item MiniWorld (statis + fungsi serverless di api/)",
+  "engines": {
+    "node": ">=18"
+  }
+}

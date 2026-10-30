@@ -39,6 +39,7 @@ import argparse
 import hashlib
 import json
 import os
+import re
 import shutil
 import sys
 from datetime import datetime
@@ -763,6 +764,52 @@ def save_cat_order(parent: str, order=None, reset: bool = False) -> dict:
             "order": data.get(parent) or [], "file": str(SUB_ORDER)}
 
 
+# ------------------------------------------------------------- kunci admin ---
+# Sumber kebenaran satu-satunya ialah auth.js di root repo: isinya HASH SHA-256,
+# bukan kuncinya, dan hash itu diparse sekali waktu mulai supaya tidak pernah
+# ada dua salinan yang bisa berbeda.
+#
+# Tanpa hash ini semua endpoint tulis MENOLAK permintaan (fail-safe) — bukan
+# membiarkannya lolos. Ini penting: menyembunyikan tombol di klien memang perlu,
+# tetapi tidak cukup sebagai pengaman, sebab siapa pun bisa memanggil
+# /api/delete langsung dari konsol peramban, baik di localhost maupun di LIVE.
+
+_H_ADMIN = ""
+
+
+def muat_hash_admin() -> bool:
+    """Baca H_ADMIN dari auth.js. False bila tidak terbaca (lalu tulis ditolak)."""
+    global _H_ADMIN
+    try:
+        teks = (APP / "auth.js").read_text(encoding="utf-8")
+    except OSError:
+        return False
+    m = re.search(r"H_ADMIN\s*=\s*'([0-9a-f]{64})'", teks)
+    if not m:
+        return False
+    _H_ADMIN = m.group(1)
+    return True
+
+
+def normalisasi_kunci(raw) -> str:
+    """Sama persis dengan normalisasi() di auth.js.
+
+    auth.js memakai `.toUpperCase().replace(/[^A-Z0-9]/g, '')` lalu menyisipkan
+    hubung per 5 — jadi di sini pun hanya A-Z dan 0-9 yang dipertahankan.
+    isalnum() TIDAK dipakai karena ikut menerima huruf non-ASCII (mis. Ä)."""
+    bersih = "".join(ch for ch in str(raw or "").upper()
+                     if ("A" <= ch <= "Z") or ("0" <= ch <= "9"))
+    return "-".join(bersih[i:i + 5] for i in range(0, len(bersih), 5))
+
+
+def kunci_admin(dikirim) -> bool:
+    """True bila `dikirim` (header x-mwdb-key) benar-benar kunci admin."""
+    if not dikirim or not _H_ADMIN:
+        return False
+    h = hashlib.sha256(normalisasi_kunci(dikirim).encode("utf-8")).hexdigest()
+    return h == _H_ADMIN
+
+
 # ------------------------------------------------------------------ handler --
 
 class Handler(BaseHTTPRequestHandler):
@@ -780,6 +827,11 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("Content-Type", ctype)
         self.send_header("Content-Length", str(len(body)))
         self.send_header("Cache-Control", "no-store")
+        # Penanda mode. Kini LIVE juga punya endpoint /api/* (fungsi
+        # serverless), jadi app.js tidak lagi menebak mode dari hostname maupun
+        # dari urutan URL yang berhasil — ia membaca header ini. Jawaban tanpa
+        # header (berkas statis di Vercel) dianggap "live".
+        self.send_header("x-mwdb-mode", "local")
         self.end_headers()
         try:
             self.wfile.write(body)
@@ -860,6 +912,12 @@ class Handler(BaseHTTPRequestHandler):
             payload = json.loads(self.rfile.read(n).decode("utf-8") or "{}")
         except Exception:
             return self._json({"error": "body bukan JSON yang sah"}, 400)
+
+        # Gerbang admin untuk SEMUA endpoint tulis. Badan tetap dibaca lebih dulu
+        # (koneksinya keep-alive, HTTP/1.1) supaya jawaban galat tidak membuat
+        # sisa body tertinggal dan merusak permintaan berikutnya.
+        if not kunci_admin(self.headers.get("x-mwdb-key")):
+            return self._json({"error": "kunci admin diperlukan"}, 401)
 
         if path == "/api/delete":
             items = payload.get("items")
@@ -943,6 +1001,11 @@ def main() -> int:
     if not (APP / "index.html").is_file():
         sys.exit(f"[!] aplikasi tidak ditemukan: {APP / 'index.html'}")
 
+    if not muat_hash_admin():
+        print("[!] H_ADMIN tidak terbaca dari auth.js")
+        print("    -> SEMUA permintaan tulis (/api/rename, /api/delete, dst.)")
+        print("       akan DITOLAK 401. Baca tetap berjalan normal.")
+
     try:
         update_manifest()                    # manifest selalu ikut isi folder
     except Exception as e:                   # noqa: BLE001
@@ -956,6 +1019,8 @@ def main() -> int:
     print(f"  kategori  : {', '.join(c['key'] for c in m['categories']) or '-'}")
     print(f"  entri     : {m['total']}  (berikon {m['withIcon']})")
     print(f"  hapus ->  : {TRASH}")
+    print(f"  tulis     : butuh kunci admin"
+          f"{' (hash ok)' if _H_ADMIN else ' (DITOLAK SEMUA)'}")
     print("=" * 62)
     print(f"  Buka:  http://{a.host}:{a.port}/")
     print("  Stop:  Ctrl+C")

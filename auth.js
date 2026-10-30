@@ -206,5 +206,14 @@
     location.reload();
   }
 
-  window.MWDB_AUTH = { tentukan, keluar, sha256hex, normalisasi, peranDari };
+  /* Kunci yang sedang dipakai, HANYA bila berperan admin. Disertai pada setiap
+     permintaan tulis supaya server bisa memverifikasi ulang — menyembunyikan
+     tombol di klien tidak cukup. Kunci tamu tidak pernah dikirim karena
+     memang tidak akan diterima. */
+  function kunciAdmin() {
+    const kunci = bacaKunci();
+    return peranDari(kunci) === 'admin' ? kunci : null;
+  }
+
+  window.MWDB_AUTH = { tentukan, keluar, kunciAdmin, sha256hex, normalisasi, peranDari };
 })();

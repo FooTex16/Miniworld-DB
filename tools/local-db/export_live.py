@@ -15,6 +15,9 @@ Catatan:
   * data/ LAMA (situs Vercel sebelumnya) sudah dipindah ke data_old/ dan tetap
     dipertahankan sebagai cadangan sekaligus sumber terjemahan awal.
   * Tidak perlu server berjalan — script ini membaca folder DATA\\ langsung.
+  * Ekspor MENGGABUNGKAN suntingan admin di situs LIVE (nama, no urut, entri
+    terhapus, urutan sub kategori) supaya koreksi dari halaman tidak tertimpa.
+    Lihat fungsi gabung_situs() untuk aturannya dan cara melepas kuncinya.
   * Jalankan ulang setiap kali database berubah, lalu commit:
 
         python tools/local-db/export_live.py
@@ -28,6 +31,7 @@ import json
 import os
 import re
 import shutil
+import subprocess
 import sys
 from datetime import date
 from pathlib import Path
@@ -141,13 +145,17 @@ def build_index(entries: list[dict], meta: dict) -> dict:
 
 # ------------------------------------------------------------- terjemahan ---
 
-def export_langs(entries: list[dict]) -> list[str]:
+def export_langs(entries: list[dict], id_lama: list | None = None) -> list[str]:
     """Bangun ulang data/lang/*.json selaras urutan entries + sig baru.
 
     Sumber terjemahan: data/lang bila sudah ada (sudah termasuk hasil rename
     dari tombol UBAH), selain itu data_old/lang (cadangan data situs lama).
-    Keduanya dipasangkan dengan index.json yang sepadan supaya posisi `n`
-    bisa dipetakan lewat id.
+
+    Pasangan `id -> nama` harus memakai URUTAN LAMA (`id_lama`), yaitu isi
+    index.json sebelum ekspor ini menimpanya. Kalau dipakai index.json yang
+    sudah baru, entri yang terhapus di tengah membuat seluruh nama di belakangnya
+    bergeser satu per sepanjang 6 berkas bahasa — dan itu tidak terlihat sampai
+    nama asing muncul pada block yang salah.
     """
     src = None
     for base in (OUT, OLD):
@@ -159,7 +167,8 @@ def export_langs(entries: list[dict]) -> list[str]:
         return []
 
     src_idx = json.loads((src / "index.json").read_text(encoding="utf-8"))
-    src_ids = [e["i"] for e in src_idx.get("entries") or []]
+    src_ids = id_lama if (id_lama and src is OUT) else \
+        [e["i"] for e in src_idx.get("entries") or []]
     sig = server.js_sig(entries)
     hasil: list[str] = []
 
@@ -225,6 +234,222 @@ def tanggal_live() -> str:
     return tgl
 
 
+# ------------------------------------------------------- suntingan situs ---
+
+def baca_situs(timeout: int = 40) -> dict | None:
+    """Ambil `data/db.json` yang kini terpasang di situs (commit terakhir).
+
+    Situs LIVE punya editor sendiri (lihat api/*.js): admin bisa mengubah nama,
+    no urut, menghapus entri, dan menyusun sub kategori langsung di halaman.
+    Semua perubahannya disimpan sebagai commit di repo ini, jadi sumbernya cukup
+    diambil lewat git — tanpa jaringan pun tetap bisa selama ref terakhir sudah
+    tersimpan di mesin.
+
+    Bila gagal, ekspor tetap berjalan tanpa penggabungan (tampil seperti dulu). """
+    try:
+        subprocess.run(["git", "fetch", "origin", "main", "--quiet"],
+                       cwd=str(REPO), timeout=timeout, check=False,
+                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    except Exception:                          # noqa: BLE001 — offline, dll.
+        pass
+
+    for ref in ("origin/main", "HEAD"):
+        try:
+            out = subprocess.run(
+                ["git", "show", ref + ":data/db.json"],
+                cwd=str(REPO), timeout=timeout, check=True,
+                stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+            db = json.loads(out.stdout.decode("utf-8"))
+        except Exception:                      # noqa: BLE001
+            continue
+        if isinstance(db, dict) and isinstance(db.get("meta"), dict) \
+                and isinstance(db.get("entries"), list):
+            return db
+
+    # cadangan terakhir: berkas hasil ekspor sebelumnya di working tree.
+    # Isinya sudah termasuk penggabungan sebelumnya, jadi menerapkannya ulang
+    # bersifat idempoten — tetap lebih baik daripada membuang penanda
+    # suntingan situs karena git tidak bisa dihubungi.
+    f = REPO / "data" / "db.json"
+    if f.is_file():
+        try:
+            db = json.loads(f.read_text(encoding="utf-8"))
+        except Exception:                      # noqa: BLE001
+            db = None
+        if isinstance(db, dict) and isinstance(db.get("meta"), dict) \
+                and isinstance(db.get("entries"), list):
+            return db
+    return None
+
+
+def selaraskan_meta(meta: dict, entries: list[dict]) -> None:
+    """Hitung ulang nilai turunan meta dari isi `entries`.
+
+    load_db() sudah menghitungnya dari folder DATA\\; begitu entri terhapus atau
+    no urutnya berubah oleh suntingan situs, angka-angka itu harus disegarkan
+    supaya jumlah di sidebar, rentang filter, dan statistik tetap benar. """
+    meta["total"] = len(entries)
+    meta["withIcon"] = sum(1 for e in entries if e.get("p"))
+    meta["named"] = sum(1 for e in entries if e.get("e") or e.get("z"))
+
+    per: dict[str, list[dict]] = {}
+    for e in entries:
+        per.setdefault(e.get("c"), []).append(e)
+
+    # gno = nomor global: kategori mengikuti urutan navigasi lalu ikut no,
+    # sama persis dengan load_db() (sorted stabil by no)
+    gno = 0
+    cats: list[dict] = []
+    for c in (meta.get("categories") or []):
+        recs = per.pop(c.get("key"), None)
+        if not recs:
+            continue                           # seluruh entri kategori terhapus
+        for r in sorted(recs, key=lambda r: r.get("no") or 0):
+            gno += 1
+            r["gno"] = gno
+        c["count"] = len(recs)
+        c["withIcon"] = sum(1 for r in recs if r.get("p"))
+        c["noMax"] = max((r.get("no") or 0 for r in recs), default=0)
+        c["noCustom"] = any(r.get("custom") for r in recs)
+        cats.append(c)
+    meta["categories"] = cats
+
+    parents: list[dict] = []
+    for c in cats:
+        p = next((x for x in parents if x["key"] == c["parent"]), None)
+        if p is None:
+            p = {"key": c["parent"], "label": c["parent"],
+                 "count": 0, "withIcon": 0, "children": []}
+            parents.append(p)
+        p["count"] += c["count"]
+        p["withIcon"] += c["withIcon"]
+        p["children"].append(c["key"])
+    meta["parents"] = parents
+    meta["noMaxAll"] = max((c["noMax"] for c in cats), default=0)
+    meta["noCustom"] = [c["key"] for c in cats if c.get("noCustom")]
+
+
+def gabung_situs(situs: dict, db: dict) -> dict:
+    """Terapkan suntingan admin di situs LIVE ke hasil ekspor lokal.
+
+    Aturannya cuma satu: APA YANG TELAH DISUNTING DI SITUS MENANG. Ekspor lokal
+    tetap yang menambah entri baru dari hasil scan, sedangkan nama, no urut,
+    entri terhapus, dan urutan sub kategori dari situs tidak ditimpa — supaya
+    koreksi admin tidak lenyap setiap kali database discan ulang.
+
+    Mengembalikan ringkasan: {"hapus": n, "nama": n, "urut": n, "sub": n}.
+
+    Untuk membatalkan kunci situs, hapus field penandanya (editNama / no0)
+    dari data/db.json, atau hapus barisnya dari meta.situsHapus. """
+    smeta = situs.get("meta") or {}
+    sents = situs.get("entries") or []
+
+    def iid(x):
+        try:
+            return int(x)
+        except (TypeError, ValueError):
+            return None
+
+    sby: dict[int, dict] = {}
+    for e in sents:
+        k = iid(e.get("i"))
+        if k is not None:
+            sby[k] = e
+
+    ringkas = {"hapus": 0, "nama": 0, "urut": 0, "sub": 0}
+    entries: list[dict] = db["entries"]
+
+    # 1) entri yang dihapus lewat situs jangan dihidupkan lagi oleh scan
+    hapus = set()
+    for c, i in (smeta.get("situsHapus") or []):
+        k = iid(i)
+        if isinstance(c, str) and k is not None:
+            hapus.add((c, k))
+    if hapus:
+        sebelum = len(entries)
+        entries = [e for e in entries
+                   if (e.get("c"), iid(e.get("i"))) not in hapus]
+        ringkas["hapus"] = sebelum - len(entries)
+    db["entries"] = entries
+
+    # 2) nama yang diedit di situs (editNama menyimpan field mana yang terkunci)
+    for e in entries:
+        s = sby.get(iid(e.get("i")))
+        if not s:
+            continue
+        fl = s.get("editNama")
+        if fl == 1:
+            fl = {"e": 1, "z": 1}
+        if not isinstance(fl, dict) or not fl:
+            continue
+        for k in ("e", "z"):
+            if k in fl and s.get(k) is not None and e.get(k) != s.get(k):
+                e[k] = s[k]
+                ringkas["nama"] += 1
+        e["editNama"] = dict(fl)
+
+    # 3) no urut: kategori yang pernah disunting situs -> seluruh urutan situs
+    #    menang; entri baru (hasil scan, tidak ada di situs) menyusul di belakang
+    #    nomor tertinggi supaya tidak pernah kembar
+    peta: dict[str, dict[int, tuple[int, object]]] = {}
+    for e in sents:
+        if e.get("no0") is None:
+            continue
+        k, no = iid(e.get("i")), e.get("no")
+        if isinstance(e.get("c"), str) and k is not None and no is not None:
+            peta.setdefault(e["c"], {})[k] = (no, e.get("no0"))
+
+    per_lokal: dict[str, list[dict]] = {}
+    for e in entries:
+        per_lokal.setdefault(e.get("c"), []).append(e)
+
+    for cat, peta_cat in peta.items():
+        recs = per_lokal.get(cat)
+        if not recs:
+            continue
+        angka = [v[0] for v in peta_cat.values() if isinstance(v[0], int)]
+        maks = max(angka) if angka else 0
+        sisa: list[dict] = []
+        for e in recs:
+            k = iid(e.get("i"))
+            if k in peta_cat:
+                e["no"], e["no0"] = peta_cat[k]
+            else:
+                sisa.append(e)
+            e["custom"] = True                # seluruh kategori = disunting
+        sisa.sort(key=lambda e: iid(e.get("i")) or 0)
+        for e in sisa:
+            maks += 1
+            e["no"] = maks
+        ringkas["urut"] += 1
+
+    # 4) urutan sub kategori yang disusun DI SITUS.
+    #    Yang jadi patokan ialah meta.situsUrut (penanda), BUKAN meta.subOrder —
+    #    field itu juga diisi ekspor lokal dari sub_urut.json. Kalau subOrder
+    #    saja yang dipakai, urutan yang Anda susun di localhost akan tertimpa
+    #    nilai situs yang lama setiap kali ikut diekspor.
+    sub = db["meta"].get("subOrder") or {}
+    situs_urut = db["meta"].get("situsUrut") or {}
+    for induk, urut in (smeta.get("situsUrut") or {}).items():
+        if not isinstance(urut, list) or not urut:
+            continue
+        if sub.get(induk) != list(urut):
+            ringkas["sub"] += 1
+        sub[induk] = list(urut)             # urutan situs menang
+        situs_urut[induk] = list(urut)      # penanda ikut dibawa ke ekspor
+    db["meta"]["subOrder"] = sub
+    if situs_urut:
+        db["meta"]["situsUrut"] = situs_urut
+
+    # 5) bawa terus penanda suntingan situs. Kalau tidak, ekspor berikutnya
+    #    tidak tahu lagi bahwa situs pernah menyunting dan koreksi admin lenyap
+    #    pada ekspor kedua.
+    if smeta.get("situsHapus"):
+        db["meta"]["situsHapus"] = list(smeta["situsHapus"])
+
+    return ringkas
+
+
 # ------------------------------------------------------------------- main ---
 
 def main() -> int:
@@ -240,20 +465,46 @@ def main() -> int:
 
     db = server.load_db()
     entries = db["entries"]
-    meta = dict(db["meta"])
-    meta.pop("root", None)          # jangan bocorkan path lokal ke situs
+
+    # Suntingan admin di situs diterapkan lebih dulu — supaya koreksi nama,
+    # no urut, hapus, dan urutan sub kategori dari LIVE tidak tertimpa ekspor.
+    situs = baca_situs()
+    ringkas = None
+    if situs is None:
+        print("  [i] data situs tidak terbaca — ekspor tanpa penggabungan")
+    else:
+        ringkas = gabung_situs(situs, db)
+        entries = db["entries"]
 
     n_icon, _ = export_icons(entries)
-    meta["withIcon"] = sum(1 for e in entries if e.get("p"))
-    meta["total"] = len(entries)
-    meta["named"] = sum(1 for e in entries if e.get("e") or e.get("z"))
+
+    meta = db["meta"]
+    meta.pop("root", None)          # jangan bocorkan path lokal ke situs
+    selaraskan_meta(meta, entries)   # hitung ulang: setelah merge + setelah ikon
     meta["sig"] = server.js_sig(entries)
 
     OUT.mkdir(parents=True, exist_ok=True)
+
+    # urutan id SEBELUM index.json ditimpa — dipakai export_langs supaya nama
+    # per bahasa tidak ikut bergeser ketika entri bertambah/berkurang
+    id_lama = None
+    if (OUT / "index.json").is_file():
+        try:
+            lama = json.loads((OUT / "index.json").read_text(encoding="utf-8"))
+            id_lama = [e["i"] for e in lama.get("entries") or []]
+        except Exception:                      # noqa: BLE001
+            id_lama = None
+
     write_json(OUT / "db.json", {"meta": meta, "entries": entries})
     write_json(OUT / "index.json", build_index(entries, meta))
-    bahasa = export_langs(entries)
+    bahasa = export_langs(entries, id_lama)
     tanggal_live()
+
+    if ringkas is not None:
+        print("-" * 62)
+        print(f"  suntingan situs yang dipertahankan: "
+              f"hapus {ringkas['hapus']} · nama {ringkas['nama']} · "
+              f"no urut {ringkas['urut']} kategori · sub {ringkas['sub']}")
 
     print("-" * 62)
     print(f"  entri    : {meta['total']}")

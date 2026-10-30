@@ -1,17 +1,29 @@
 /* MiniWorld DB — katalog ID block, item, dan creature.
-   Satu berkas dipakai dua tempat; yang membedakan hanya sumber datanya:
+   Satu berkas dipakai dua tempat; yang membedakan sumber datanya:
 
      LOCAL  server lokal (server.py)  ->  /api/db + /api/lang/ + /api/icon/
                                           membaca folder DATA\<indu>\<kategori>
-     LIVE   situs statis (Vercel)     ->  data/db.json + data/lang/ + data/icons/
+     LIVE   situs Vercel              ->  /api/db (fungsi serverless di api/)
+                                          membaca data/db.json di repo GitHub;
+                                          data/lang + data/icons tetap statis
 
-   Mode dibaca dari hostname, lalu dikonfirmasi lagi waktu data dimuat (URL
-   dicoba dua-duanya bila tebakan salah). Di mode LIVE semua tulisan diblokir:
-   hapus, ubah no urut, urutkan sub kategori, dan ubah nama — tampilannya tetap
-   sama, hanya aksi tulisnya yang diganti pesan baca-saja.
+   Keduanya menyediakan endpoint /api/* dengan bentuk yang sama, jadi alur
+   kodenya identik — mode hanya menentukan badge, sumber daya statis, dan
+   kunci footer. Mode dibaca dari hostname lalu dikonfirmasi ulang lewat
+   header x-mwdb-mode yang disertai tiap jawaban backend.
 
-   Tambahan lokal: pilih-banyak, penanda duplikat, tombol hapus, ubah no urut,
-   dan ubah nama block (/api/rename). */
+   PENULISAN. Dulu LIVE baca-saja karena tidak ada server. Sekarang tersedia
+   fungsi serverless yang menyimpan suntingan admin sebagai SATU commit di
+   repo GitHub, sehingga semua pengunjung ikut melihat perubahan dan riwayatnya
+   bisa dibatalkan di GitHub. Tiap endpoint tulis MEMERIKSA ULANG kunci admin
+   di server; menyembunyikan tombol di klien tidak dianggap pengaman karena
+   siapa pun bisa memanggil endpoint dari konsol peramban. Bila backend belum
+   dikonfigurasi, situs jatuh ke data/db.json statis dan seluruh tombol tulis
+   diblokir oleh blokirTulis().
+
+   Batasan peran: tamu hanya menelusuri + menyalin ID. Filter, sort sub
+   kategori, pilih-banyak/hapus, ubah no urut, urutkan sub kategori, dan ubah
+   nama butuh admin (data-req="admin" di CSS + blokirAdmin()). */
 (() => {
   'use strict';
 
@@ -37,9 +49,18 @@
     if (foot) foot.dataset.i18nHtml = LIVE ? 'footerLive' : 'footer';
   }
 
-  /* True bila situs sedang LIVE (baca-saja): tampilkan pesan, jangan lanjut. */
+  /* True bila perubahan tidak bisa disimpan.
+
+     Dulu LIVE selalu baca-saja karena memang tidak ada server yang bisa
+     menulis. Sekarang tersedia fungsi serverless (api/*.js) yang menyimpan
+     suntingan admin ke repo GitHub, jadi yang menentukan bukan mode, melainkan
+     apakah endpoint /api/* menjawab. Berkas data/db.json statis tetap dipakai
+     sebagai cadangan bila backend belum dikonfigurasi — dan pada saat itulah
+     tombol tulis diblokir, lengkap dengan pesan alasannya. */
+  let BACKEND = false;                  // /api/db menjawab -> jalur tulis ada
+
   function blokirTulis() {
-    if (!LIVE) return false;
+    if (BACKEND) return false;
     toastMsg(t('ro.msg'));
     return true;
   }
@@ -165,7 +186,13 @@
     document.documentElement.lang = state.lang;
     document.title = t('title');
     document.querySelectorAll('[data-i18n]').forEach(el => {
-      el.textContent = tr(el.dataset.i18n, el.textContent);
+      let teks = tr(el.dataset.i18n, el.textContent);
+      /* Hanya kunci db.updated yang memuat tanggal. tr() selalu mengembalikan
+         nilai dari kamus (tanggal ekspor yang asli), jadi menggesernya di sini
+         bersifat idempoten — berapa kali pun applyLang() dipanggil, hasilnya
+         sama: tanggal maju bila situs pernah disunting setelah ekspor terakhir. */
+      if (el.dataset.i18n === 'db.updated') teks = tanggalSitus(teks);
+      el.textContent = teks;
     });
     document.querySelectorAll('[data-i18n-html]').forEach(el => {
       el.innerHTML = tr(el.dataset.i18nHtml, el.innerHTML);
@@ -203,6 +230,30 @@
   // ganti placeholder {nama} di dalam teks terjemahan
   const fill = (s, map) => String(s).replace(/\{(\w+)\}/g,
     (m, k) => (k in map ? map[k] : m));
+
+  /* Majukan tanggal "database update terakhir ..." bila situs pernah disunting
+     setelah ekspor terakhir. Sengaja hanya MAJU, tidak pernah mundur: ekspor
+     lokal bisa berjalan belakangan dan tanggalnya harus menang. Ditulis dalam
+     UTC supaya semua pengunjung — di zona berapa pun — melihat tanggal yang
+     sama. */
+  function tanggalSitus(teks) {
+    const s = String(teks);
+    const ada = /\d{2}\/\d{2}\/\d{4}/.exec(s);
+    const iso = state.meta && state.meta.situs;
+    if (!ada || !iso) return s;
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return s;
+
+    const p = ada[0].split('/').map(Number);      // [tanggal, bulan, tahun]
+    const lama = Date.UTC(p[2], p[1] - 1, p[0]);
+    const baru = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
+    if (isNaN(lama) || baru <= lama) return s;
+
+    const tgl = String(d.getUTCDate()).padStart(2, '0') + '/' +
+                String(d.getUTCMonth() + 1).padStart(2, '0') + '/' +
+                d.getUTCFullYear();
+    return s.replace(/\d{2}\/\d{2}\/\d{4}/, tgl);
+  }
 
   function escapeHtml(s) {
     return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -467,27 +518,65 @@
     return res.json();
   }
 
-  /* Coba URL berurutan sampai ada yang berhasil; kalau tebakan mode salah,
-     mode LIVE dikoreksi supaya badge & keterangan ikut benar. */
+  /* Coba URL berurutan sampai ada yang berhasil. Respon ikut dikembalikan
+     karena backend menandai dirinya lewat header x-mwdb-mode (live | local):
+     itulah penanda mode yang andal, bukan tebakan dari hostname.
+
+     endpoint /api/db dicoba lebih dulu (dia yang menentukan apakah jalur tulis
+     ada), tetapi DIBATASI WAKTU — kalau fungsi serverless sedang cold start atau
+     GitHub sedang padat, halaman tidak boleh ikut menunggu; berkas statis CDN
+     selalu jadi cadangan. Bila API tidak sempat menjawab, ia dicatat sebagai
+     gagal dan statis itulah yang kepakai (lalu tulis diblokir). */
+  const BATAS_API = 6000;                    // ms — cukup untuk cold start
+
+  async function ambilJson(url, batas) {
+    const ac = (batas && typeof AbortController !== 'undefined') ? new AbortController() : null;
+    const jam = ac ? setTimeout(() => ac.abort(), batas) : null;
+    try {
+      const res = await fetch(url, ac
+        ? { cache: 'no-cache', signal: ac.signal }
+        : { cache: 'no-cache' });
+      if (!res.ok) throw new Error(url + ' → HTTP ' + res.status);
+      return [await res.json(), res.headers.get('x-mwdb-mode')];
+    } finally {
+      if (jam) clearTimeout(jam);
+    }
+  }
+
   async function loadJsonMode(urut) {
     let err = null;
     for (const u of urut) {
       try {
-        return [u, await loadJson(u)];
+        const [data, mode] = await ambilJson(u, u === URL_DB_API ? BATAS_API : null);
+        return [u, data, mode];
       } catch (e) {
-        if (!err) err = e;
+        err = e;                             // galat terakhir yang paling mewakili
       }
     }
     throw err;
   }
 
-  async function loadIndex() {
-    const urut = LIVE ? [URL_DB_STATIS, URL_DB_API] : [URL_DB_API, URL_DB_STATIS];
-    const [pakai, data] = await loadJsonMode(urut);
-    LIVE = pakai === URL_DB_STATIS;
-    terapkanMode();
+  /* Pasang payload db. Endpoint tulis mengembalikan db segar sehingga klien
+     langsung memakainya tanpa memuat ulang — penting karena /api/db bisa
+     dijawab CDN dengan isi lama selama beberapa detik. */
+  function pakaiDb(data) {
+    if (!data || !Array.isArray(data.entries) || typeof data.meta !== 'object') return false;
     state.entries = data.entries;
     state.meta = data.meta;
+    return true;
+  }
+
+  /* Sumber data: /api/db lebih dulu — LOCAL (server.py) dan LIVE
+     (fungsi serverless) keduanya menyediakannya. Berkas statis hanya cadangan;
+     bila cadangan itulah yang kepakai, berarti backend belum dikonfigurasi dan
+     jalur tulis ikut mati (lihat blokirTulis). */
+  async function loadIndex(dbBaru) {
+    if (!pakaiDb(dbBaru)) {
+      const [pakai, data, mode] = await loadJsonMode([URL_DB_API, URL_DB_STATIS]);
+      BACKEND = pakai === URL_DB_API;
+      if (mode) { LIVE = mode === 'live'; terapkanMode(); }
+      pakaiDb(data);
+    }
     ui.lang.value = state.lang;
   }
 
@@ -784,6 +873,25 @@
     updateSelUI();
   }
 
+  /* ---------- tulis ---------- */
+
+  /* Kirim satu permintaan tulis ke backend. Kunci admin ikut disertai sebagai
+     header supaya server MEMERIKSA ULANG haknya — menyembunyikan tombol di
+     klien memang perlu, tetapi tidak cukup sebagai pengaman karena siapa pun
+     bisa memanggil endpoint langsung dari konsol peramban. */
+  async function tulisApi(path, body) {
+    const kunci = (window.MWDB_AUTH && MWDB_AUTH.kunciAdmin) ? MWDB_AUTH.kunciAdmin() : null;
+    const res = await fetch(path, {
+      method: 'POST',
+      headers: Object.assign({ 'Content-Type': 'application/json' },
+        kunci ? { 'x-mwdb-key': kunci } : {}),
+      body: JSON.stringify(body),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.ok) throw new Error(data.error || ('HTTP ' + res.status));
+    return data;
+  }
+
   /* ---------- hapus ---------- */
 
   async function deleteSelected() {
@@ -801,19 +909,13 @@
     ui.selDelete.disabled = true;
     ui.selClear.disabled = true;
     try {
-      const res = await fetch('/api/delete', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ items }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error || ('HTTP ' + res.status));
+      const data = await tulisApi('/api/delete', { items });
 
       state.sel.clear();
-      await muatUlang();                 // entries + meta baru dari server
+      await muatUlang(data.db);            // entries + meta baru dari server
 
       toastMsg(fill(t('del.done'), {
-        n: fmt(data.deleted), icon: fmt(data.iconsMoved),
+        n: fmt(data.deleted), icon: fmt(data.iconsMoved || 0),
       }));
     } catch (err) {
       alert(t('del.fail') + ' ' + err.message);
@@ -851,18 +953,11 @@
   }
 
   async function kirimUrut(body) {
-    const res = await fetch('/api/order', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok || !data.ok) throw new Error(data.error || ('HTTP ' + res.status));
-    return data;
+    return tulisApi('/api/order', body);
   }
 
-  async function muatUrutUlang() {
-    await loadIndex();
+  async function muatUrutUlang(dbBaru) {
+    await loadIndex(dbBaru);
     dropHaystack();
     markDuplicates();
     rebuild();
@@ -872,11 +967,8 @@
 
   async function simpanUrut(cat, ket) {
     try {
-      await kirimUrut({ cat: cat, map: orderMap(cat) });
-      if (state.meta) {                   // tandai kategori sebagai "disunting"
-        const arr = state.meta.noCustom || (state.meta.noCustom = []);
-        if (arr.indexOf(cat) < 0) arr.push(cat);
-      }
+      const data = await kirimUrut({ cat: cat, map: orderMap(cat) });
+      await muatUrutUlang(data.db);      // tampilkan persis yang tersimpan
       toastMsg(fill(t('no.saved'), { ket: ket }));
     } catch (err) {
       alert(t('no.saveFail') + ' ' + err.message);
@@ -973,9 +1065,9 @@
   async function simpanEditNama() {
     const e = edEntry;
     if (!e || ui.edSave.disabled) return;
-    // tamu tidak berhak mengubah nama; LIVE juga baca-saja — pesannya
-    // tampil di dalam modal supaya jelas
-    const alasan = !admin() ? t('login.readonly') : (LIVE ? t('ro.msg') : null);
+    // tamu tidak berhak mengubah nama; admin pun tetap butuh jalur tulis
+    // (backend) — pesannya tampil di dalam modal supaya jelas
+    const alasan = !admin() ? t('login.readonly') : (BACKEND ? null : t('ro.msg'));
     if (alasan) {
       ui.edErr.textContent = alasan;
       ui.edErr.hidden = false;
@@ -991,16 +1083,10 @@
     ui.edSave.disabled = true;
     ui.edErr.hidden = true;
     try {
-      const res = await fetch('/api/rename', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ cat: e.c, i: e.i, e: namaE, z: namaZ }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok || !data.ok) throw new Error(data.error || ('HTTP ' + res.status));
+      const data = await tulisApi('/api/rename',
+        { cat: e.c, i: e.i, e: namaE, z: namaZ });
 
-      e.e = namaE;
-      e.z = namaZ;
+      pakaiDb(data.db);                   // ambil entri segar dari penyimpanan
       tutupEditNama();
       dropHaystack();
       markDuplicates();                  // nama bisa membuat entri jadi duplikat
@@ -1009,7 +1095,8 @@
       while (state.shown < jml && state.shown < state.filtered.length) renderChunk();
       window.scrollTo(0, y);
 
-      // kabar sinkron translate: hasil edit ikut ditulis ke data situs
+      // kabar sinkron translate: hanya server lokal yang bisa menandai nama
+      // basi untuk diterjemahkan ulang
       const site = data.site || {};
       let pesan = fill(t('ed.saved'), { id: e.i });
       if (site.ok === false) pesan += ' · ' + t('ed.siteFail');
@@ -1096,8 +1183,8 @@
 
   /* ---------- urutkan sub kategori ---------- */
 
-  async function muatUlang() {
-    await loadIndex();
+  async function muatUlang(dbBaru) {
+    await loadIndex(dbBaru);
     state.translations = {};            // urutan entri berubah -> petakan ulang
     dropHaystack();
     await loadLang(state.lang);
@@ -1128,14 +1215,7 @@
   }
 
   async function kirimUrutSub(body) {
-    const res = await fetch('/api/cat_order', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok || !data.ok) throw new Error(data.error || ('HTTP ' + res.status));
-    return data;
+    return tulisApi('/api/cat_order', body);
   }
 
   async function simpanUrutSub() {
@@ -1149,7 +1229,7 @@
       const data = await kirimUrutSub({ parent: induk, order });
       state.modeCat = false;
       state.catPicks = [];
-      await muatUlang();
+      await muatUlang(data.db);
       toastMsg(fill(t('cat.applied'),
         { branch: catNama(induk), n: data.n != null ? data.n : order.length }));
     } catch (err) {
@@ -1163,10 +1243,10 @@
     if (!induk) return;
     if (!window.confirm(fill(t('cat.resetConfirm'), { branch: catNama(induk) }))) return;
     try {
-      await kirimUrutSub({ parent: induk, reset: true });
+      const data = await kirimUrutSub({ parent: induk, reset: true });
       state.modeCat = false;
       state.catPicks = [];
-      await muatUlang();
+      await muatUlang(data.db);
       toastMsg(fill(t('cat.resetDone'), { branch: catNama(induk) }));
     } catch (err) {
       alert(t('cat.resetFail') + ' ' + err.message);
@@ -1254,9 +1334,9 @@
     if (cat === 'all' || cat.indexOf('/') < 0 || blokirAdmin() || blokirTulis()) return;
     if (!window.confirm(fill(t('no.resetConfirm'), { cat: judulCat() }))) return;
     try {
-      await kirimUrut({ cat: cat, reset: true });
+      const data = await kirimUrut({ cat: cat, reset: true });
       state.picks = [];
-      await muatUrutUlang();
+      await muatUrutUlang(data.db);
       updatePickUI();
       toastMsg(fill(t('no.resetDone'), { cat: judulCat() }));
     } catch (err) {
