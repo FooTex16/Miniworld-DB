@@ -563,6 +563,12 @@
     if (!data || !Array.isArray(data.entries) || typeof data.meta !== 'object') return false;
     state.entries = data.entries;
     state.meta = data.meta;
+    /* Semua jalur tulis bermuara di sini (rename lewat pakaiDb langsung,
+       hapus/urut lewat muatUlang -> loadIndex -> pakaiDb). applyLang() memuat
+       ulang teks statis termasuk tanggal "update terakhir" (db.updated), yang
+       baru saja dimajukan oleh meta.situs pada data segar dari server — tanpa
+       ini admin harus memuat ulang halaman dulu untuk melihat tanggalnya. */
+    applyLang();
     return true;
   }
 
