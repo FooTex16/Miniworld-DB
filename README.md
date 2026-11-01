@@ -46,9 +46,23 @@ positif supaya kontrol admin ikut tersembunyi saat layar login, ketika body belu
 punya kelas peran) **dan** fungsi-fungsinya dijaga `blokirAdmin()`; tombol
 **Keluar** di pojok kanan atas menghapus kunci lalu memuat ulang halaman.
 
-Yang tersimpan di repo hanyalah **hash SHA-256** kedua kunci (`H_GUEST` / `H_ADMIN`
-di `auth.js`), bukan kuncinya. Kunci plaintext ditulis di berkas di **luar** repo
+Yang tersimpan di repo hanyalah **hash SHA-256** kedua kunci, bukan kuncinya.
+Hash itu ada di **dua** berkas — `auth.js` (dipakai peramban) dan `api/_lib.js`
+(dipakai fungsi serverless, yang sengaja tidak bergantung pada berkas klien) —
+dan keduanya **harus identik**: beda satu karakter berarti kunci admin menolak
+dirinya sendiri di salah satu mode. `tools/local-db/server.py` tidak menyimpan
+salinan; ia membaca `H_ADMIN` dari `auth.js` saat mulai (gagal membaca = semua
+tulis ditolak, fail-safe). Kunci plaintext ditulis di berkas di **luar** repo
 (`..\KUNCI-AKSES.txt`) — bagikan hanya kunci tamu.
+
+**Mengganti kunci**: hitung SHA-256 dari kunci ternormalisasi (huruf besar,
+buang selain `A–Z` dan `0–9`, sisipkan hubung tiap 5 karakter), lalu perbarui
+**kedua** baris `H_GUEST`/`H_ADMIN` di `auth.js` **dan** di `api/_lib.js`, lalu
+push. `server.py` ikut sendiri (membacanya dari `auth.js`), dan Vercel ikut
+deploy. Kalau lupa salah satu berkas, satu mode akan menolak kunci yang benar —
+itulah yang dicek otomatis oleh uji `uji-api/uji_endpoint.js` bagian `[0]`
+(jalankan dari luar repo; berkas uji tidak ikut di-commit karena memuat kunci
+plaintext).
 
 > **Pemeriksaan tidak berhenti di klien.** Menyembunyikan tombol memang perlu, tetapi
 > tidak cukup sebagai pengaman karena siapa pun bisa memanggil endpoint langsung dari
@@ -59,8 +73,8 @@ di `auth.js`), bukan kuncinya. Kunci plaintext ditulis di berkas di **luar** rep
 > menjawab `503`.
 >
 > Data `data/db.json` tetap bisa dibaca siapa pun yang membuka URL-nya langsung
-> (repo juga publik), jadi jangan pernah simpan rahasia di sana. Bila kunci admin
-> bocor, ganti kedua kunci + kedua hash lalu push.
+> (repo juga publik), jadi jangan pernah simpan rahasia di sana. Bila kunci bocor,
+> ganti hash di kedua berkas seperti dijelaskan di atas, lalu push.
 
 ## Isi repo
 
@@ -251,9 +265,11 @@ yang memang harus tetap asli, mis. `English`, `中文`, nama path, kode berkas).
 
 ## Database lokal (`tools/local-db`)
 
-Versi localhost membaca **folder `DATA\` di luar repo** (bukan `data/`), dengan tampilan
-mengikuti halaman situs. Selain fitur baca, versi lokal menambah pilih-banyak, penanda
-duplikat, tombol hapus, ubah no urut, dan ubah nama block.
+Versi localhost membaca **folder `DATA\` di luar repo** (bukan `data/`), dengan
+tampilan dan fitur yang **sama persis** dengan situs: pilih-banyak, penanda
+duplikat, hapus, ubah no urut, ubah nama, dan urut sub kategori. Bedanya bukan
+pada kemampuan, melainkan pada **tempat penyimpanan** — localhost menulis ke
+`DATA\`, situs menulis ke repo lewat `api/`.
 
 ```bash
 cd tools/local-db
